@@ -1,69 +1,106 @@
 import Image from "next/image";
+import { APP_STORE_URL, SITE_URL } from "@/lib/constants";
+import { getLearningHealth } from "@/lib/health";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const health = await getLearningHealth();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+    <div className="flex flex-1 flex-col">
+      <header className="border-b border-[var(--border)]">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
             <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+              src="/images/app/forro-icon.png"
+              alt=""
+              width={36}
+              height={36}
+              className="rounded-full"
+              priority
             />
-            Deploy Now
-          </a>
+            <div>
+              <div className="text-sm font-semibold tracking-tight">ForroVivo Learner</div>
+              <div className="text-xs text-[var(--muted)]">learn.forrovivo.com</div>
+            </div>
+          </div>
           <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            href={SITE_URL}
+            className="text-sm text-[var(--muted)] underline-offset-4 hover:text-[var(--foreground)] hover:underline"
           >
-            Documentation
+            forrovivo.com
           </a>
         </div>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-12 sm:px-6 sm:py-16">
+        <p className="text-sm font-medium text-[var(--brand)]">Learner portal</p>
+        <h1 className="mt-2 max-w-xl text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl">
+          Your Forro Vivo learning account, on the web.
+        </h1>
+        <p className="mt-4 max-w-xl text-base leading-relaxed text-[var(--muted)]">
+          This host is the web companion for learners. Lessons, progress sync, and account
+          recovery stay on the Forro Vivo apps and{" "}
+          <code className="rounded bg-[var(--surface)] px-1.5 py-0.5 text-sm">
+            api.forrovivo.com
+          </code>
+          . Web sign-in and progress views ship here next.
+        </p>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <a
+            href={APP_STORE_URL}
+            className="inline-flex h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-5 text-sm font-semibold text-white hover:bg-[var(--brand-ink)]"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Open Forro Vivo on the App Store
+          </a>
+          <a
+            href={`${SITE_URL}/dictionaries`}
+            className="inline-flex h-11 items-center justify-center rounded-lg border border-[var(--border)] px-5 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface)]"
+          >
+            Browse dictionaries
+          </a>
+        </div>
+
+        <section className="mt-12 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
+          <h2 className="text-sm font-semibold tracking-tight">Learning API status</h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            Live probes against the Learning catalog Worker. No invented metrics.
+          </p>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li className="flex items-center justify-between gap-3">
+              <span>Catalog health</span>
+              <Status ok={health.probes.catalog.ok} status={health.probes.catalog.status} />
+            </li>
+            <li className="flex items-center justify-between gap-3">
+              <span>Account health</span>
+              <Status ok={health.probes.account.ok} status={health.probes.account.status} />
+            </li>
+          </ul>
+        </section>
       </main>
+
+      <footer className="border-t border-[var(--border)]">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-1 px-4 py-6 text-xs text-[var(--muted)] sm:px-6">
+          <span>LIVLU TECHNOLOGIES LTD</span>
+          <span>Learner portal · forrovivo-learner · learn.forrovivo.com</span>
+        </div>
+      </footer>
     </div>
+  );
+}
+
+function Status({ ok, status }: { ok: boolean; status: number | null }) {
+  return (
+    <span
+      className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+        ok ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"
+      }`}
+    >
+      {ok ? `OK${status != null ? ` · ${status}` : ""}` : `Down${status != null ? ` · ${status}` : ""}`}
+    </span>
   );
 }

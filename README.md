@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# forrovivo-learner
 
-## Getting Started
+Learner portal for Forro Vivo. Vercel deploys it at **learn.forrovivo.com**.
 
-First, run the development server:
+This is not Admin, not the public marketing site, and not Connect. Learning catalog and account APIs stay on Cloudflare (`api.forrovivo.com`). Native apps remain the primary learning surface.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+Vercel
+│
+├── forrovivo-web      forrovivo.com, connect.forrovivo.com
+├── forrovivo-admin    admin.forrovivo.com
+└── forrovivo-learner  learn.forrovivo.com
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Host | Vercel project | Folder | Role |
+|------|----------------|--------|------|
+| `learn.forrovivo.com` | `forrovivo-learner` | this repo | Learner portal |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Local
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+Optional: set `LEARN_ORIGIN=http://localhost:3000` when the home page health strip must call a non-Vercel origin.
 
-To learn more about Next.js, take a look at the following resources:
+## Do not
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Store linguistic JSON here (packs stay in `forrovivo-research` / Learning catalog).
+- Reuse Admin tokens or Admin RBAC for learners.
+- Commit `.env.local`, secrets, or learner PII.
