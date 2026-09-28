@@ -1,5 +1,8 @@
-import Image from "next/image";
-import { APP_STORE_URL, SITE_URL } from "@/lib/constants";
+import Link from "next/link";
+import { AppDownloadCtas } from "@/components/AppDownloadCtas";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SITE_URL } from "@/lib/constants";
 import { getLearningHealth } from "@/lib/health";
 
 export const dynamic = "force-dynamic";
@@ -9,30 +12,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-[var(--border)]">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/images/app/forro-icon.png"
-              alt=""
-              width={36}
-              height={36}
-              className="rounded-full"
-              priority
-            />
-            <div>
-              <div className="text-sm font-semibold tracking-tight">ForroVivo Learner</div>
-              <div className="text-xs text-[var(--muted)]">learn.forrovivo.com</div>
-            </div>
-          </div>
-          <a
-            href={SITE_URL}
-            className="text-sm text-[var(--muted)] underline-offset-4 hover:text-[var(--foreground)] hover:underline"
-          >
-            forrovivo.com
-          </a>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-12 sm:px-6 sm:py-16">
         <p className="text-sm font-medium text-[var(--brand)]">Learner portal</p>
@@ -45,25 +25,37 @@ export default async function Home() {
           <code className="rounded bg-[var(--surface)] px-1.5 py-0.5 text-sm">
             api.forrovivo.com
           </code>
-          . Web sign-in and progress views ship here next.
+          . Sign in or create an account in the app, then return here for web progress.
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <a
-            href={APP_STORE_URL}
+          <Link
+            href="/login"
             className="inline-flex h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-5 text-sm font-semibold text-white hover:bg-[var(--brand-ink)]"
-            rel="noopener noreferrer"
-            target="_blank"
           >
-            Open Forro Vivo on the App Store
-          </a>
+            Log in
+          </Link>
+          <Link
+            href="/create-account"
+            className="inline-flex h-11 items-center justify-center rounded-lg border border-[var(--border)] px-5 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface)]"
+          >
+            Create account
+          </Link>
           <a
             href={`${SITE_URL}/dictionaries`}
-            className="inline-flex h-11 items-center justify-center rounded-lg border border-[var(--border)] px-5 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface)]"
+            className="inline-flex h-11 items-center justify-center rounded-lg px-5 text-sm font-medium text-[var(--muted)] underline-offset-4 hover:text-[var(--foreground)] hover:underline"
           >
             Browse dictionaries
           </a>
         </div>
+
+        <section className="mt-10 max-w-lg">
+          <h2 className="text-sm font-semibold tracking-tight">Download the app</h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            iOS and Android — sign in with Apple or Google.
+          </p>
+          <AppDownloadCtas className="mt-4" />
+        </section>
 
         <section className="mt-12 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
           <h2 className="text-sm font-semibold tracking-tight">Learning API status</h2>
@@ -83,12 +75,7 @@ export default async function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-[var(--border)]">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-1 px-4 py-6 text-xs text-[var(--muted)] sm:px-6">
-          <span>LIVLU TECHNOLOGIES LTD</span>
-          <span>Learner portal · forrovivo-learner · learn.forrovivo.com</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

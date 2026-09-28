@@ -16,6 +16,14 @@ Vercel
 |------|----------------|--------|------|
 | `learn.forrovivo.com` | `forrovivo-learner` | this repo | Learner portal |
 
+## Routes
+
+| Path | Role |
+|------|------|
+| `/` | Portal home, API health, app download CTAs |
+| `/login` | Sign-in guidance + iOS / Android download |
+| `/create-account` | Account creation via the apps + download CTAs |
+
 ## Local
 
 ```bash
