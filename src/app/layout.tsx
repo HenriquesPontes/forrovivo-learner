@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://learn.forrovivo.com"),
   title: "ForroVivo Learner",
   description:
-    "Learner portal for Forro Vivo progress, account, and learning path — companion to the native apps.",
+    "Learner portal for ForroVivo progress, account, and learning path — companion to the native apps.",
   robots: { index: false, follow: false },
   icons: {
     icon: "/images/app/forro-icon.png",

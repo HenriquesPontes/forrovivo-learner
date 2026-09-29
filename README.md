@@ -1,6 +1,6 @@
 # forrovivo-learner
 
-Learner portal for Forro Vivo. Vercel deploys it at **learn.forrovivo.com**.
+Learner portal for ForroVivo. Vercel deploys it at **learn.forrovivo.com**.
 
 This is not Admin, not the public marketing site, and not Connect. Learning catalog and account APIs stay on Cloudflare (`api.forrovivo.com`). Native apps remain the primary learning surface.
 

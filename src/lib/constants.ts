@@ -1,7 +1,7 @@
-/** Public App Store listing for Forro Vivo. */
+/** Public App Store listing for ForroVivo. */
 export const APP_STORE_URL = "https://apps.apple.com/app/id6751409176";
 
-/** Google Play listing for Forro Vivo. */
+/** Google Play listing for ForroVivo. */
 export const PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=com.hen.forrovivo";
 
