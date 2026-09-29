@@ -20,9 +20,12 @@ Vercel
 
 | Path | Role |
 |------|------|
-| `/` | Portal home, API health, app download CTAs |
-| `/login` | Sign-in guidance + iOS / Android download |
-| `/create-account` | Account creation via the apps + download CTAs |
+| `/` | Email/password log in (first page) |
+| `/create-account` | Create a web learner account |
+| `/home` | Signed-in portal home |
+| `/login` | Redirects to `/` |
+
+Web auth calls `api.forrovivo.com` (`POST /app/v1/auth/login` and `/app/v1/auth/register`). Native apps keep Apple / Google sign-in.
 
 ## Local
 
@@ -31,7 +34,10 @@ npm install
 npm run dev
 ```
 
-Optional: set `LEARN_ORIGIN=http://localhost:3000` when the home page health strip must call a non-Vercel origin.
+Optional:
+
+- `LEARN_ORIGIN=http://localhost:3000` when the health strip must call a non-Vercel origin
+- `API_ORIGIN=https://api.forrovivo.com` (default) for account auth proxy routes
 
 ## Do not
 
