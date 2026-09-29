@@ -50,22 +50,25 @@ export async function POST(request: Request) {
     });
   } catch {
     return NextResponse.json(
-      { status: "error", message: "Could not reach the account service." },
+      { status: "error", message: "Could not create the account. Please try again." },
       { status: 503 },
     );
   }
 
   const data = (await upstream.json().catch(() => ({}))) as AuthSuccess | AuthErrorBody;
   if (!upstream.ok || data.status !== "ok" || !("token" in data)) {
+    const code = "code" in data ? data.code : undefined;
+    const message =
+      code === "AUTH_EXISTS"
+        ? "An account with this email already exists."
+        : code === "ACCOUNT_SUSPENDED"
+          ? "This account is unavailable."
+          : upstream.status === 401 || code === "AUTH_INVALID"
+            ? "Email or password is incorrect."
+            : "Could not create the account. Please try again.";
     return NextResponse.json(
-      {
-        status: "error",
-        message:
-          "message" in data && typeof data.message === "string"
-            ? data.message
-            : "Could not create the account.",
-      },
-      { status: upstream.status || 400 },
+      { status: "error", message },
+      { status: upstream.status === 401 ? 401 : upstream.status === 403 ? 403 : 400 },
     );
   }
 

@@ -24,7 +24,6 @@ export function SiteHeader({ signedIn = false }: SiteHeaderProps) {
           />
           <div>
             <div className="text-sm font-semibold tracking-tight">ForroVivo Learner</div>
-            <div className="text-xs text-[var(--muted)]">learn.forrovivo.com</div>
           </div>
         </Link>
         <nav className="flex items-center gap-4 text-sm">

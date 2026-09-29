@@ -13,12 +13,11 @@ export default async function Home() {
       <SiteHeader />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-12 sm:px-6 sm:py-16">
-        <p className="text-sm font-medium text-[var(--brand)]">Learner portal</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl">
           Log in
         </h1>
         <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--muted)]">
-          Sign in with your email and password to open your ForroVivo learning account on the web.
+          Sign in with your email and password.
         </p>
 
         <AuthForm mode="login" />

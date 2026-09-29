@@ -96,7 +96,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           onChange={(event) => setPassword(event.target.value)}
           disabled={status === "loading"}
           className="mt-1.5 h-11 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/20"
-          placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
+          placeholder="Password"
         />
       </label>
 

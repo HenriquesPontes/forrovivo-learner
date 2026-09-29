@@ -40,22 +40,23 @@ export async function POST(request: Request) {
     });
   } catch {
     return NextResponse.json(
-      { status: "error", message: "Could not reach the account service." },
+      { status: "error", message: "Could not sign in. Please try again." },
       { status: 503 },
     );
   }
 
   const data = (await upstream.json().catch(() => ({}))) as AuthSuccess | AuthErrorBody;
   if (!upstream.ok || data.status !== "ok" || !("token" in data)) {
+    const code = "code" in data ? data.code : undefined;
+    const message =
+      code === "ACCOUNT_SUSPENDED"
+        ? "This account is unavailable."
+        : upstream.status === 401 || code === "AUTH_INVALID"
+          ? "Email or password is incorrect."
+          : "Could not sign in. Please try again.";
     return NextResponse.json(
-      {
-        status: "error",
-        message:
-          "message" in data && typeof data.message === "string"
-            ? data.message
-            : "Email or password is incorrect.",
-      },
-      { status: upstream.status === 401 ? 401 : upstream.status || 400 },
+      { status: "error", message },
+      { status: upstream.status === 401 ? 401 : upstream.status === 403 ? 403 : 400 },
     );
   }
 

@@ -20,13 +20,11 @@ export default async function CreateAccountPage() {
       <SiteHeader />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-12 sm:px-6 sm:py-16">
-        <p className="text-sm font-medium text-[var(--brand)]">Learner portal</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl">
           Create account
         </h1>
         <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--muted)]">
-          Create a web learning account with email and password. Native apps still use Apple or
-          Google on the device.
+          Create your ForroVivo learning account with email and password.
         </p>
 
         <AuthForm mode="register" />
