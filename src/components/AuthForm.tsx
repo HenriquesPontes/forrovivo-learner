@@ -85,7 +85,17 @@ export function AuthForm({ mode }: AuthFormProps) {
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium text-[var(--foreground)]">Password</span>
+        <span className="flex items-center justify-between gap-3 text-sm font-medium text-[var(--foreground)]">
+          <span>Password</span>
+          {mode === "login" ? (
+            <Link
+              href="/forgot-password"
+              className="font-normal text-[var(--muted)] underline-offset-4 hover:text-[var(--brand)] hover:underline"
+            >
+              Forgot password?
+            </Link>
+          ) : null}
+        </span>
         <input
           type="password"
           name="password"

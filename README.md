@@ -22,10 +22,14 @@ Vercel
 |------|------|
 | `/` | Email/password log in (first page) |
 | `/create-account` | Create a web learner account |
+| `/forgot-password` | Request a password reset email |
+| `/reset-password` | Set a new password from a reset link |
 | `/home` | Signed-in portal home |
 | `/login` | Redirects to `/` |
 
-Web auth calls `api.forrovivo.com` (`POST /app/v1/auth/login` and `/app/v1/auth/register`). Native apps keep Apple / Google sign-in.
+Web auth calls `api.forrovivo.com` (`POST /app/v1/auth/login`, `/register`, `/forgot-password`, `/reset-password`). Native apps keep Apple / Google sign-in.
+
+Password reset requires `LEARNER_WEB_SERVICE_KEY` (same value on the Worker) and `RESEND_API_KEY` on the learner host.
 
 ## Local
 

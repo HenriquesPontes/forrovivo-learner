@@ -13,3 +13,16 @@ export const ACCOUNT_HEALTH_URL = `${API_ORIGIN}/app/v1/account/health`;
 
 export const SITE_URL = "https://forrovivo.com";
 export const LEARN_ORIGIN = "https://learn.forrovivo.com";
+
+/** Optional Apple Sign In on the web (Services ID). Empty = social button disabled. */
+export const APPLE_WEB_CLIENT_ID =
+  process.env.NEXT_PUBLIC_APPLE_WEB_CLIENT_ID?.trim() || "";
+
+/** Must match the Apple Services ID return URL. */
+export const APPLE_WEB_REDIRECT_URI =
+  process.env.NEXT_PUBLIC_APPLE_WEB_REDIRECT_URI?.trim() ||
+  `${LEARN_ORIGIN}/`;
+
+/** Optional Google Sign In on the web (OAuth client ID). Empty = social button disabled. */
+export const GOOGLE_WEB_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || "";

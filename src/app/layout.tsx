@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "ForroVivo Learner",
   description:
     "Learner portal for Forro Vivo progress, account, and learning path — companion to the native apps.",
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: false },
   icons: {
     icon: "/images/app/forro-icon.png",
     apple: "/images/app/forro-icon.png",
