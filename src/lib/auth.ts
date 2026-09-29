@@ -1,4 +1,5 @@
 export const SESSION_COOKIE = "fv_learner_session";
+export const GUEST_COOKIE = "fv_learner_guest";
 export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 128;
 
@@ -89,6 +90,28 @@ export function sessionCookieOptions(expiresAt: string) {
     path: "/",
     expires: Number.isNaN(expires.getTime()) ? undefined : expires,
   };
+}
+
+export function guestCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  };
+}
+
+export function clearGuestCookie(response: {
+  cookies: { set: (name: string, value: string, options: object) => void };
+}) {
+  response.cookies.set(GUEST_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
 }
 
 export function validateEmail(raw: string): string | null {

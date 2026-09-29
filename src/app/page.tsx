@@ -2,15 +2,15 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/AuthForm";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { readSessionToken } from "@/lib/session";
+import { readLearnerAccess } from "@/lib/session";
 
 export default async function Home() {
-  const token = await readSessionToken();
-  if (token) redirect("/home");
+  const access = await readLearnerAccess();
+  if (access.kind === "account") redirect("/home");
 
   return (
     <div className="flex flex-1 flex-col">
-      <SiteHeader />
+      <SiteHeader guest={access.kind === "guest"} />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-12 sm:px-6 sm:py-16">
         <h1 className="text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl">

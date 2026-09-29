@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   apiOrigin,
+  GUEST_COOKIE,
   SESSION_COOKIE,
   sessionCookieOptions,
   validateEmail,
@@ -82,5 +83,12 @@ export async function POST(request: Request) {
     data.token,
     sessionCookieOptions(data.expiresAt),
   );
+  response.cookies.set(GUEST_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
   return response;
 }

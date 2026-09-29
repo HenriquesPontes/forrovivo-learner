@@ -16,20 +16,32 @@ Vercel
 |------|----------------|--------|------|
 | `learn.forrovivo.com` | `forrovivo-learner` | this repo | Learner portal |
 
+## Flow
+
+| Step | Route |
+|------|--------|
+| Log in | `/` (email/password) |
+| Try as guest | Header **Try lessons** → `/try` → `/home` |
+| Course map | `/home` |
+| Lesson quiz | `/academy/[unit]/[level]` |
+| Register / save | `/create-account` |
+
+Guests study **Unit 1** only. Account unlocks the full path.
+
 ## Routes
 
 | Path | Role |
 |------|------|
-| `/` | Email/password log in (first page) |
-| `/create-account` | Create a web learner account |
+| `/` | Email/password login |
+| `/try` | Enter as guest → redirect `/home` |
+| `/home` | Academy course map (guest or signed-in) |
+| `/academy/[unit]/[level]` | Lesson quiz from attested `learning_path.json` |
+| `/login` | Alias → `/` |
+| `/create-account` | Register / save progress |
 | `/forgot-password` | Request a password reset email |
 | `/reset-password` | Set a new password from a reset link |
-| `/home` | Signed-in portal home |
-| `/login` | Redirects to `/` |
 
-Web auth calls `api.forrovivo.com` (`POST /app/v1/auth/login`, `/register`, `/forgot-password`, `/reset-password`). Native apps keep Apple / Google sign-in.
-
-Password reset requires `LEARNER_WEB_SERVICE_KEY` (same value on the Worker) and `RESEND_API_KEY` on the learner host.
+Catalog: `GET /app/v1/catalog/forro/learning_path.json`. Auth: `POST /app/v1/auth/login|register|forgot-password|reset-password`.
 
 ## Local
 

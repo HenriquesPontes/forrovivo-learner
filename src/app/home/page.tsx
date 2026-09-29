@@ -1,62 +1,62 @@
 import { redirect } from "next/navigation";
 import { AppDownloadCtas } from "@/components/AppDownloadCtas";
+import { CourseMap } from "@/components/academy/CourseMap";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { LogoutButton } from "@/components/LogoutButton";
-import { apiOrigin } from "@/lib/auth";
-import { readSessionToken } from "@/lib/session";
+import { fetchForroCurriculum } from "@/lib/learning-path";
+import { readLearnerAccess } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePortalPage() {
-  const token = await readSessionToken();
-  if (!token) redirect("/");
+  const access = await readLearnerAccess();
+  if (access.kind === null) redirect("/");
 
-  let email: string | null = null;
-  let displayName = "";
+  const isGuest = access.kind === "guest";
+
+  let units: Awaited<ReturnType<typeof fetchForroCurriculum>> = [];
+  let catalogError = false;
   try {
-    const response = await fetch(`${apiOrigin()}/app/v1/account`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-      cache: "no-store",
-    });
-    if (response.ok) {
-      const data = (await response.json()) as {
-        account?: { email?: string | null; displayName?: string };
-      };
-      email = data.account?.email ?? null;
-      displayName = data.account?.displayName?.trim() || "";
-    }
+    units = await fetchForroCurriculum();
   } catch {
-    // Profile is optional; the session cookie is enough to stay signed in.
+    catalogError = true;
   }
 
   return (
-    <div className="flex flex-1 flex-col">
-      <SiteHeader signedIn />
+    <div className="flex flex-1 flex-col bg-[#fafafa]">
+      <SiteHeader signedIn={access.kind === "account"} guest={isGuest} />
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-12 sm:px-6 sm:py-16">
-        <h1 className="text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl">
-          {displayName ? `Welcome, ${displayName}` : "Welcome back"}
-        </h1>
-        <p className="mt-3 max-w-xl text-base leading-relaxed text-[var(--muted)]">
-          {email
-            ? `Signed in as ${email}.`
-            : "You are signed in to your ForroVivo learning account."}
-        </p>
-
-        <div className="mt-6">
-          <LogoutButton />
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-3xl">
+            Forro
+          </h1>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            {isGuest
+              ? "Guest path · Unit 1 open"
+              : "Select a lesson on the path"}
+          </p>
         </div>
 
-        <section className="mt-10 max-w-lg">
-          <h2 className="text-sm font-semibold tracking-tight">Continue in the app</h2>
+        <section className="mt-8 flex-1">
+          {catalogError ? (
+            <p className="text-center text-sm text-[var(--muted)]">
+              Could not load the Academy catalog. Refresh the page, or continue
+              in the native app.
+            </p>
+          ) : (
+            <CourseMap units={units} guestMode={isGuest} />
+          )}
+        </section>
+
+        <section className="mx-auto mt-10 max-w-sm border-t border-[var(--border)] pt-8 text-center">
+          <h2 className="text-sm font-semibold tracking-tight text-[var(--brand-ink)]">
+            Also on the app
+          </h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Lessons and daily practice stay on iOS and Android.
+            Dictionary, audio, and offline study on iOS and Android.
           </p>
-          <AppDownloadCtas className="mt-4" />
+          <AppDownloadCtas className="mt-4 justify-center" />
         </section>
       </main>
 
