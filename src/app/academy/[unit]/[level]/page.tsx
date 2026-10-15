@@ -70,6 +70,7 @@ export default async function AcademyLessonPage({ params }: LessonPageProps) {
           <LessonQuiz
             unitTitle={unit.title}
             levelTitle={level.title}
+            skillFamily={level.skillFamily}
             phrases={level.phrases}
             distractors={distractors}
           />

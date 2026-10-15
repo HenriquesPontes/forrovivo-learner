@@ -22,7 +22,7 @@ type PathRow = {
   showLockedCta: boolean;
 };
 
-/** Dialogue select_course row rhythm: 1 → 2 → 1 → 1 → 2 → … */
+/** Course-map row rhythm: 1 → 2 → 1 → 1 → 2 → … */
 const ROW_SIZES = [1, 2, 1, 1, 2, 1, 1, 1, 2] as const;
 
 function buildNodes(units: CurriculumUnit[], guestMode: boolean): PathNode[] {

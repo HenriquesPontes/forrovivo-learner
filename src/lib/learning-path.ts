@@ -7,10 +7,19 @@ export type PathPhrase = {
   portuguese: string;
 };
 
+/** Skill family on an existing Forro level. */
+export type SkillFamily =
+  | "vocab"
+  | "phrase"
+  | "grammar"
+  | "culture"
+  | "dialogue";
+
 export type CurriculumLevel = {
   number: number;
   title: string;
   titlePt: string;
+  skillFamily: SkillFamily;
   phrases: PathPhrase[];
 };
 
@@ -37,8 +46,26 @@ type RawEntry = {
   level_number?: number | string;
   level_title?: string;
   level_title_pt?: string;
+  skill_family?: string;
   sort?: number | string;
 };
+
+const SKILL_FAMILIES = new Set<SkillFamily>([
+  "vocab",
+  "phrase",
+  "grammar",
+  "culture",
+  "dialogue",
+]);
+
+function parseSkillFamily(raw: unknown): SkillFamily {
+  const value = String(raw ?? "")
+    .trim()
+    .toLowerCase();
+  return SKILL_FAMILIES.has(value as SkillFamily)
+    ? (value as SkillFamily)
+    : "phrase";
+}
 
 function asInt(value: number | string | undefined): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -77,6 +104,7 @@ export function parseLearningPath(payload: unknown): CurriculumUnit[] {
         levelNumber,
         levelTitle: String(row.level_title ?? "").trim(),
         levelTitlePt: String(row.level_title_pt ?? "").trim(),
+        skillFamily: parseSkillFamily(row.skill_family),
         sort: asInt(row.sort),
       };
     })
@@ -115,6 +143,7 @@ export function parseLearningPath(payload: unknown): CurriculumUnit[] {
             number: levelNumber,
             title: levelFirst.levelTitle || `Level ${levelNumber}`,
             titlePt: levelFirst.levelTitlePt,
+            skillFamily: levelFirst.skillFamily,
             phrases,
           };
         });
@@ -156,7 +185,7 @@ export function findLevel(
   return { unit, level };
 }
 
-/** Dialogue-Africa-style slug for deep links, e.g. hello-and-goodbye_quiz */
+/** Slug for deep links, e.g. hello-and-goodbye_quiz */
 export function levelQuizSlug(levelTitle: string): string {
   const base = levelTitle
     .toLowerCase()
