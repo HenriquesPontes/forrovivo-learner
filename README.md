@@ -14,13 +14,21 @@ Vercel
 
 | Host | Vercel project | Folder | Role |
 |------|----------------|--------|------|
-| `learn.forrovivo.com` | `forrovivo-learner` | this repo | Learner portal |
+| `learn.forrovivo.com` | `forrovivo-learner` | this repo | Web Academy portal |
+
+## Current stage
+
+- Guests enter via **Try lessons**, study the first Academy unit, and are prompted to create an account for the full path.
+- Signed-in learners use email/password auth (and optional Apple / Google when portal OAuth env is configured).
+- Course map and lesson quizzes read attested Forro `learning_path.json` from the Learning catalog.
+- Password reset flows proxy to the platform Worker (`forgot-password` / `reset-password`).
+- Store CTAs link to the App Store and Google Play for the native Learning apps.
 
 ## Flow
 
 | Step | Route |
 |------|--------|
-| Log in | `/` (email/password) |
+| Log in | `/` (email/password; optional social) |
 | Try as guest | Header **Try lessons** → `/try` → `/home` |
 | Course map | `/home` |
 | Lesson quiz | `/academy/[unit]/[level]` |
@@ -40,8 +48,9 @@ Guests study **Unit 1** only. Account unlocks the full path.
 | `/create-account` | Register / save progress |
 | `/forgot-password` | Request a password reset email |
 | `/reset-password` | Set a new password from a reset link |
+| `/api/auth/*` | Login, register, logout, OAuth, password reset proxies |
 
-Catalog: `GET /app/v1/catalog/forro/learning_path.json`. Auth: `POST /app/v1/auth/login|register|forgot-password|reset-password`.
+Catalog: `GET /app/v1/catalog/forro/learning_path.json`. Auth: `POST /app/v1/auth/login|register|forgot-password|reset-password` (and session / OAuth as configured on the Worker).
 
 ## Local
 
@@ -52,8 +61,9 @@ npm run dev
 
 Optional:
 
-- `LEARN_ORIGIN=http://localhost:3000` when the health strip must call a non-Vercel origin
-- `API_ORIGIN=https://api.forrovivo.com` (default) for account auth proxy routes
+- `LEARN_ORIGIN` when the health strip must call a non-default origin
+- `API_ORIGIN` (defaults to `https://api.forrovivo.com`) for account auth proxy routes
+- Apple / Google client IDs only when social sign-in should appear
 
 ## Do not
 
