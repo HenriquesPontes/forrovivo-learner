@@ -56,13 +56,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const data = (await upstream.json().catch(() => ({}))) as AuthSuccess | AuthErrorBody;
+  const data = (await upstream.json().catch(() => ({}))) as AuthSuccess | AuthErrorBody & {
+    pending?: boolean;
+  };
+  if (upstream.ok && data.status === "ok" && "pending" in data && data.pending) {
+    return NextResponse.json({
+      status: "ok",
+      pending: true,
+      message: "If this address can take an account, we sent the next step by email.",
+    });
+  }
   if (!upstream.ok || data.status !== "ok" || !("token" in data)) {
     const code = "code" in data ? data.code : undefined;
     const message =
-      code === "AUTH_EXISTS"
-        ? "An account with this email already exists."
-        : code === "ACCOUNT_SUSPENDED"
+      code === "ACCOUNT_SUSPENDED"
           ? "This account is unavailable."
           : upstream.status === 401 || code === "AUTH_INVALID"
             ? "Email or password is incorrect."

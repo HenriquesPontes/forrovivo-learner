@@ -37,10 +37,15 @@ export function AuthForm({ mode }: AuthFormProps) {
           }),
         },
       );
-      const data: { message?: string } = await response.json().catch(() => ({}));
+      const data: { message?: string; pending?: boolean } = await response.json().catch(() => ({}));
       if (!response.ok) {
         setStatus("error");
         setMessage(data.message || "Something went wrong. Please try again.");
+        return;
+      }
+      if (data.pending) {
+        setStatus("idle");
+        setMessage(data.message || "Check your email to continue.");
         return;
       }
       router.replace("/home");
@@ -112,6 +117,10 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       {status === "error" ? (
         <p className="text-sm text-red-700" role="alert">
+          {message}
+        </p>
+      ) : message ? (
+        <p className="text-sm text-[var(--foreground)]" role="status">
           {message}
         </p>
       ) : null}
