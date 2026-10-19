@@ -40,7 +40,7 @@ export async function sendPasswordResetEmail(options: {
   resetUrl: string;
 }): Promise<"sent" | "skipped" | "failed"> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM_EMAIL?.trim() || "ForroVivo <noreply@forrovivo.com>";
+  const from = process.env.RESEND_FROM_EMAIL?.trim() || "ForroVivo <hello@forrovivo.com>";
   if (!apiKey) {
     console.info("[auth] RESEND_API_KEY not set; password reset email skipped.");
     if (process.env.NODE_ENV !== "production") {
