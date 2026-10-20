@@ -1,5 +1,11 @@
 # forrovivo-learner
 
+<p align="center">
+  <img src="public/images/app/forro-icon.png" alt="Forro Vivo app icon" width="180">
+</p>
+
+Web lessons at [learn.forrovivo.com](https://learn.forrovivo.com). Guests can study the first unit. An account opens the rest of the path. The iPhone and Android apps remain the main way to learn.
+
 Learner portal for ForroVivo. Vercel deploys it at **learn.forrovivo.com**.
 
 This is not Admin, not the public marketing site, and not Connect. Learning catalog and account APIs stay on Cloudflare (`api.forrovivo.com`). Native iOS and Android apps are **live in production** and remain the primary learning surface.
