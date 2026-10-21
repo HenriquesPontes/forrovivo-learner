@@ -1,5 +1,6 @@
 "use client";
 
+import { useLearnerCopy } from "@/components/LearnerText";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -8,6 +9,7 @@ type LogoutButtonProps = {
 };
 
 export function LogoutButton({ label = "Log out" }: LogoutButtonProps) {
+  const { tr } = useLearnerCopy();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -30,10 +32,17 @@ export function LogoutButton({ label = "Log out" }: LogoutButtonProps) {
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="inline-flex h-9 items-center justify-center rounded-md border border-[var(--border)] bg-white px-3 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/30"
+      aria-label={tr(loading ? "Signing out…" : label)}
+      title={tr(loading ? "Signing out…" : label)}
+      aria-busy={loading}
+      className="learner-logout-icon"
     >
-      {loading ? "Signing out…" : label}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="m10 3 4 2v14l-4 2V3Z" fill="currentColor" fillOpacity=".14" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M15 12h6m-3-3 3 3-3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </button>
-    {error && <span role="alert" className="mt-1 text-xs text-red-700">{error}</span>}</span>
+    {error && <span role="alert" className="mt-1 text-xs text-red-700">{tr(error)}</span>}</span>
   );
 }

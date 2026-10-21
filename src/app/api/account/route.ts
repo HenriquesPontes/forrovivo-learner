@@ -1,3 +1,4 @@
+import { AUTH_LOCALE_COOKIE } from "@/lib/auth-copy";
 import { requireAccount } from "@/lib/session";
 import { backend, bearer, isAccount } from "@/lib/backend";
 import { clearSessionCookies, storageScope } from "@/lib/auth";
@@ -17,7 +18,9 @@ export async function PATCH(request: Request) {
       body: JSON.stringify({ schemaVersion: 1, displayName, appLanguage: body.appLanguage,
         email: account.email, studyLanguage: account.studyLanguage, updatedAt: new Date().toISOString() }) });
     if (!isAccount(result.account)) throw new RequestError(502, "Could not confirm the updated profile.");
-    return json({ status: "ok" });
+    const response = json({ status: "ok", appLanguage: result.account.appLanguage });
+    response.cookies.set(AUTH_LOCALE_COOKIE, result.account.appLanguage, { path: "/", maxAge: 31536000, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
+    return response;
   } catch (error) { return routeError(error); }
 }
 

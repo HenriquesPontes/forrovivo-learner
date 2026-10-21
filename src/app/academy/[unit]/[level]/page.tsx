@@ -1,3 +1,7 @@
+import { cookies } from "next/headers";
+import { LearnerLanguage } from "@/components/LearnerLanguage";
+import { authLocale, AUTH_LOCALE_COOKIE } from "@/lib/auth-copy";
+import { LearnerText } from "@/components/LearnerText";
 import { fetchForroCurriculum } from "@/lib/catalog";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -50,32 +54,31 @@ export default async function AcademyLessonPage({ params }: LessonPageProps) {
   const isGuest = access.kind === "guest";
 
   return (
-    <div className="flex flex-1 flex-col">
+    <LearnerLanguage initialLocale={authLocale(access.kind === "account" ? access.account.appLanguage : (await cookies()).get(AUTH_LOCALE_COOKIE)?.value)}><div className="learner-world learner-lesson">
       <SiteHeader signedIn={access.kind === "account"} guest={isGuest} />
 
       <LearnerProgress key={access.scope} scope={access.scope} guest={isGuest}>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <main id="learner-main" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <p className="mb-6 text-sm text-[var(--muted)]">
           <Link
             href={`/home#${quizHash}`}
             className="underline-offset-4 hover:text-[var(--foreground)] hover:underline"
-          >
-            Forro Academy
-          </Link>
+          ><LearnerText text={"Forro Academy"} /></Link>
           <span aria-hidden="true"> / </span>
-          <span>
-            Unit {unit.number} · Lesson {level.number}
+          <span><LearnerText text={"Unit"} />{unit.number}<LearnerText text={" · Lesson "} />{level.number}
           </span>
         </p>
 
         <div id={quizHash}>
-          <LessonAccess unit={unit} level={level.number}>
+          <LessonAccess units={units} unit={unit} level={level.number}>
           <LessonQuiz
             key={`${unit.number}:${level.number}`}
             unitNumber={unit.number}
             levelNumber={level.number}
             unitTitle={unit.title}
+            unitTitlePt={unit.titlePt}
             levelTitle={level.title}
+            levelTitlePt={level.titlePt}
             skillFamily={level.skillFamily}
             phrases={level.phrases}
             distractors={distractors}
@@ -87,6 +90,6 @@ export default async function AcademyLessonPage({ params }: LessonPageProps) {
       </LearnerProgress>
 
       <SiteFooter />
-    </div>
+    </div></LearnerLanguage>
   );
 }

@@ -1,5 +1,8 @@
 "use client";
 
+import { LearnerText, useLearnerCopy } from "@/components/LearnerText";
+
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +14,7 @@ type ResetPasswordFormProps = {
 
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const router = useRouter();
+  const { tr } = useLearnerCopy();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -50,16 +54,12 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   if (!token) {
     return (
       <div className="mt-8 w-full max-w-sm space-y-4">
-        <p className="text-sm text-red-700" role="alert">
-          This reset link is invalid or has expired.
-        </p>
+        <p className="text-sm text-red-700" role="alert"><LearnerText text={"This reset link is invalid or has expired."} /></p>
         <p className="text-sm text-[var(--muted)]">
           <Link
             href="/forgot-password"
             className="font-medium text-[var(--brand)] underline-offset-4 hover:underline"
-          >
-            Request a new link
-          </Link>
+          ><LearnerText text={"Request a new link"} /></Link>
         </p>
       </div>
     );
@@ -68,7 +68,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   return (
     <form onSubmit={onSubmit} className="mt-8 w-full max-w-sm space-y-4">
       <label className="block">
-        <span className="text-sm font-medium text-[var(--foreground)]">New password</span>
+        <span className="text-sm font-medium text-[var(--foreground)]"><LearnerText text={"New password"} /></span>
         <input
           type="password"
           name="password"
@@ -85,7 +85,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
       </label>
 
       <label className="block">
-        <span className="text-sm font-medium text-[var(--foreground)]">Confirm password</span>
+        <span className="text-sm font-medium text-[var(--foreground)]"><LearnerText text={"Confirm password"} /></span>
         <input
           type="password"
           name="confirm"
@@ -103,7 +103,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
       {status === "error" ? (
         <p className="text-sm text-red-700" role="alert">
-          {message}
+          {tr(message)}
         </p>
       ) : null}
 
@@ -112,7 +112,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
         disabled={status === "loading"}
         className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[var(--brand)] px-5 text-sm font-semibold text-white hover:bg-[var(--brand-ink)] disabled:opacity-60"
       >
-        {status === "loading" ? "Saving…" : "Reset password"}
+        {tr(status === "loading" ? "Saving…" : "Reset password")}
       </button>
     </form>
   );

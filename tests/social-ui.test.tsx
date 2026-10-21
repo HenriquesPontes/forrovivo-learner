@@ -21,16 +21,18 @@ let root: Root;
 let node: HTMLDivElement;
 let callback: (response: { credential?: string }) => void;
 const initialize = vi.fn((config: { nonce: string; client_id: string; callback: typeof callback }) => { callback = config.callback; });
+const renderButton = vi.fn((parent: HTMLElement, options: { width: number }) => {
+  void options;
+  const button = document.createElement("button");
+  button.textContent = "Continue with Google";
+  parent.appendChild(button);
+});
 const appleInit = vi.fn();
 const appleSignIn = vi.fn();
 const fetcher = vi.fn<typeof fetch>();
 
 function googleSdk() {
-  window.google = { accounts: { id: { initialize, renderButton: (parent) => {
-    const button = document.createElement("button");
-    button.textContent = "Continue with Google";
-    parent.appendChild(button);
-  } } } };
+  window.google = { accounts: { id: { initialize, renderButton } } };
 }
 function appleSdk() { window.AppleID = { auth: { init: appleInit, signIn: appleSignIn } }; }
 async function mount() { await act(async () => { root.render(<SocialSignIn />); }); }
@@ -61,20 +63,26 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-it("shows both providers honestly when configuration is absent, without loading SDKs", async () => {
+it("hides unconfigured providers without showing dead buttons or loading SDKs", async () => {
   await mount();
-  const buttons = [...node.querySelectorAll("button")];
-  expect(buttons.map(button => button.textContent)).toEqual(["Continue with Apple", "Continue with Google"]);
-  expect(buttons.every(button => button.disabled)).toBe(true);
-  expect(node.textContent).toContain("Apple sign-in is currently unavailable.");
-  expect(node.textContent).toContain("Google sign-in is currently unavailable.");
+  expect(node.querySelector("section")).toBeNull();
   expect(fetcher).not.toHaveBeenCalled();
+});
+
+it("keeps Apple disabled beside Google until Apple web sign-in is configured", async () => {
+  setup.google = "fixture-google-web"; googleSdk();
+  await mount();
+  expect(node.textContent).toContain("Continue with Google");
+  expect(node.querySelector<HTMLButtonElement>(".social-apple")?.disabled).toBe(true);
+  expect(node.querySelector("#apple-signin-unavailable")).toBeTruthy();
 });
 
 it("uses Google's official rendered button and nonce, navigating only after server success", async () => {
   setup.google = "fixture-google-web"; googleSdk();
   await mount();
   expect(initialize).toHaveBeenCalledWith(expect.objectContaining({ client_id: setup.google, nonce, auto_select: false }));
+  expect(renderButton).toHaveBeenCalledWith(expect.any(HTMLElement), expect.objectContaining({ size: "large", text: "continue_with", width: expect.any(Number) }));
+  expect(renderButton.mock.calls[0][1].width).toBeLessThan(200);
   expect(node.textContent).not.toContain("Google sign-in is currently unavailable.");
   await act(async () => { callback({ credential: "fixture-google-jwt" }); });
   expect(fetcher).toHaveBeenCalledWith("/api/auth/oauth", expect.objectContaining({ body: JSON.stringify({ idToken: "fixture-google-jwt" }) }));
@@ -159,11 +167,14 @@ it("pending registration stays on the form and does not invent a sent email", as
 it("switches between English and Portuguese without losing typed credentials", async () => {
   await act(async () => { root.render(<AuthLanguageProvider initialLocale="en"><AuthScreen mode="login" className="test-font" /></AuthLanguageProvider>); });
   await fill("email", "fixture@example.test"); await fill("password", "fixture-password");
+  expect(node.textContent).toContain("All rights reserved.");
+  expect(node.textContent).not.toContain("LIVLU Studio");
   await click("PT");
   expect(node.querySelector("h1")?.textContent).toBe("Entrar");
+  expect(node.textContent).toContain("Todos os direitos reservados.");
+  expect(node.querySelector(".auth-brand")?.getAttribute("href")).toBe("/home");
   expect(node.textContent).toContain("Palavra-passe");
-  expect(node.textContent).toContain("Continuar com Apple");
-  expect(node.textContent).toContain("Continuar com Google");
+  expect(node.querySelector(".auth-social")).toBeNull();
   expect(node.textContent).not.toContain("Use the same provider");
   expect(node.textContent).not.toContain("Back to website");
   expect(document.documentElement.lang).toBe("pt-PT");

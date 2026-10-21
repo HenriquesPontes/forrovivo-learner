@@ -6,6 +6,15 @@ async function register(page: Page, email = "first@example.test") {
   await page.getByLabel("Password", { exact: true }).fill("fixture-password");
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/home$/);
+  const introduction = page.getByRole("heading", { name: "How would you like to learn?", exact: true });
+  await expect(introduction.or(page.getByRole("heading", { name: "Forro", exact: true }))).toBeVisible();
+  if (await introduction.isVisible()) {
+    await page.getByRole("radio", { name: /^Solo / }).check();
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.getByRole("button", { name: "Skip this question", exact: true }).click();
+    await page.getByRole("button", { name: "Skip this question", exact: true }).click();
+    await page.getByRole("button", { name: "Start learning on the web", exact: true }).click();
+  }
   await expect(page.getByText("Progress saved to your account.", { exact: true })).toBeVisible();
 }
 
@@ -18,6 +27,48 @@ async function finishFirstLesson(page: Page) {
 }
 
 test.beforeEach(async ({ request }) => { await request.post("http://127.0.0.1:4319/_test/reset"); });
+
+test("a new account gets a short web introduction once, and a guest does not", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/try");
+  await expect(page.getByRole("heading", { name: "Forro", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How much Forro do you know?", exact: true })).toHaveCount(0);
+
+  await page.goto("/create-account");
+  await page.getByLabel("Email", { exact: true }).fill("quick@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("fixture-password");
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole("heading", { name: "How would you like to learn?", exact: true })).toBeVisible();
+  await page.getByRole("radio", { name: /^Solo / }).check();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "How much Forro do you know?", exact: true })).toBeVisible();
+  await expect(page.locator("video")).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole("radio", { name: "I know a few words", exact: true }).check();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "What brings you to Forro?", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Português", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "O que te traz ao Forro?", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "English", exact: true }).click();
+  await page.getByRole("button", { name: "Skip this question", exact: true }).click();
+  await expect(page.getByRole("link", { name: "App Store" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Google Play" })).toBeVisible();
+  await page.getByRole("button", { name: "Start learning on the web", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Forro", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "How much Forro do you know?", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "O que te traz ao Forro?", exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Log out", exact: true }).click();
+  await expect(page).toHaveURL("/");
+  await page.getByLabel("Email", { exact: true }).fill("quick@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("fixture-password");
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole("heading", { name: "Forro", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How much Forro do you know?", exact: true })).toHaveCount(0);
+});
 
 test("guest lesson survives navigation and refresh; later units and skipped lessons stay locked", async ({ page }) => {
   const errors: string[] = [];

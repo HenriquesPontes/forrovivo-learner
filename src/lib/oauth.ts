@@ -1,3 +1,4 @@
+import { authLocale, AUTH_LOCALE_COOKIE } from "@/lib/auth-copy";
 import { cookies } from "next/headers";
 import { authResponse, OAUTH_COOKIE, clearCookieOptions, requireWebSessionConfiguration } from "@/lib/auth";
 import { backend, bearer, BackendError, isAccount } from "@/lib/backend";
@@ -46,7 +47,7 @@ export async function oauth(request: Request) {
       const profile = await backend("/app/v1/account", { method: "PUT", headers: { ...bearer(session.token), "Content-Type": "application/json" },
         body: JSON.stringify({ schemaVersion: 1, displayName: typeof claims.name === "string" && claims.name.trim() ? claims.name.trim().slice(0, 120) : "Learner",
           ...(emailVerified && typeof claims.email === "string" ? { email: claims.email } : {}),
-          appLanguage: "en", studyLanguage: "forro", updatedAt: new Date().toISOString() }) });
+          appLanguage: authLocale((await cookies()).get(AUTH_LOCALE_COOKIE)?.value), studyLanguage: "forro", updatedAt: new Date().toISOString() }) });
       if (!isAccount(profile.account)) throw new RequestError(502, "Could not create the account profile.");
     }
     const response = await authResponse(session);

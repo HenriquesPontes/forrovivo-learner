@@ -30,3 +30,23 @@ describe("native progress compatibility", () => {
     expect(isLessonResult({ ...result(1), completedAt: "2099-01-01T00:00:00Z" })).toBe(false);
   });
 });
+
+
+describe("sequential course access", () => {
+  const second = { ...units[0], number: 2 };
+  const curriculum = [units[0], second];
+  it("opens only the first lesson of the first unit for a new learner", () => {
+    expect(lessonAvailable(units[0], 1, [], [], curriculum)).toBe(true);
+    expect(lessonAvailable(units[0], 2, [], [], curriculum)).toBe(false);
+    expect(lessonAvailable(second, 1, [], [], curriculum)).toBe(false);
+  });
+  it("keeps later units locked until every earlier lesson is complete", () => {
+    expect(lessonAvailable(second, 1, [], [result(1), result(2)], curriculum)).toBe(false);
+    expect(lessonAvailable(second, 1, [], [result(1), result(2), result(4)], curriculum)).toBe(true);
+    expect(lessonAvailable(second, 2, [], [result(1), result(2), result(4)], curriculum)).toBe(false);
+  });
+  it("uses synced native completion counts to unlock the next unit", () => {
+    expect(lessonAvailable(second, 1, [{ ...native[0], completedLessonCount: 3 }], [], curriculum)).toBe(true);
+    expect(lessonAvailable(second, 1, native, [], curriculum)).toBe(false);
+  });
+});

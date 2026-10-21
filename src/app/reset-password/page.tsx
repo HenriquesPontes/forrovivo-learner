@@ -1,3 +1,5 @@
+import { LearnerText } from "@/components/LearnerText";
+import { CartoonScene } from "@/components/CartoonScene";
 import type { Metadata } from "next";
 import { ResetPasswordForm } from "@/components/ResetPasswordForm";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -18,16 +20,13 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
   const token = typeof params.token === "string" ? params.token.trim() : "";
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="learner-world learner-recovery">
       <SiteHeader />
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-12 sm:px-6 sm:py-16">
-        <h1 className="text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl">
-          Reset password
-        </h1>
-        <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--muted)]">
-          Choose a new password for your account.
-        </p>
+      <main id="learner-main" tabIndex={-1} className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-12 sm:px-6 sm:py-16">
+        <CartoonScene scene="key" />
+        <h1 className="text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl"><LearnerText text={"Reset password"} /></h1>
+        <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--muted)]"><LearnerText text={"Choose a new password for your account."} /></p>
 
         <ResetPasswordForm token={token} />
       </main>

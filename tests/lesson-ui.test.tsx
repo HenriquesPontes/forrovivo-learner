@@ -13,7 +13,7 @@ const units = parseLearningPath({ entries: [1, 2].map(level => ({ id: `fixture-$
 let root: Root;
 let node: HTMLDivElement;
 function lesson(guest: boolean, scope: string) {
-  return <LearnerProgress scope={scope} guest={guest}><LessonAccess unit={units[0]} level={1}>
+  return <LearnerProgress scope={scope} guest={guest}><LessonAccess units={units} unit={units[0]} level={1}>
     <LessonQuiz unitNumber={1} levelNumber={1} unitTitle="Fixture unit" levelTitle="Fixture lesson" skillFamily="vocab"
       phrases={units[0].levels[0].phrases} distractors={units[0].levels.flatMap(level => level.phrases)} />
   </LessonAccess><ProgressStatus /></LearnerProgress>;

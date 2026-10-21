@@ -1,5 +1,8 @@
 "use client";
 
+import { LearnerText } from "@/components/LearnerText";
+
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { CurriculumUnit } from "@/lib/learning-path";
 import { isLessonResult, lessonAvailable, mergeResults, parseLocalProgress, type LessonResult, type UnitProgress } from "@/lib/progress";
@@ -103,21 +106,21 @@ export function useLearnerProgress() {
 export function ProgressStatus() {
   const progress = useLearnerProgress();
   return <div className="mx-auto mt-4 max-w-md text-center text-sm text-[var(--muted)]">
-    <p role="status">{progress.notice}</p>
-    {!progress.guest && <button type="button" onClick={() => void progress.sync()} className="mt-2 font-medium text-[var(--brand)] underline">Retry sync</button>}
+    <p role="status"><LearnerText text={progress.notice} /></p>
+    {!progress.guest && progress.ready && progress.notice !== "Progress saved to your account." && <button type="button" onClick={() => void progress.sync()} className="mt-2 font-medium text-[var(--brand)] underline"><LearnerText text={"Retry sync"} /></button>}
     {!progress.guest && progress.ready && progress.guestResults.length > 0 && <div className="mt-4 rounded-lg border border-[var(--border)] p-4">
-      <p>You have guest lessons saved on this browser.</p>
-      <button type="button" onClick={() => void progress.claim()} className="mt-2 font-semibold text-[var(--brand)] underline">Save guest lessons to this account</button>
+      <p><LearnerText text={"You have guest lessons saved on this browser."} /></p>
+      <button type="button" onClick={() => void progress.claim()} className="mt-2 font-semibold text-[var(--brand)] underline"><LearnerText text={"Save guest lessons to this account"} /></button>
     </div>}
   </div>;
 }
 
-export function LessonAccess({ unit, level, children }: { unit: CurriculumUnit; level: number; children: React.ReactNode }) {
+export function LessonAccess({ unit, units, level, children }: { unit: CurriculumUnit; units: CurriculumUnit[]; level: number; children: React.ReactNode }) {
   const progress = useLearnerProgress();
-  if (!progress.ready) return <p role="status">Loading your lesson…</p>;
-  if (!lessonAvailable(unit, level, progress.rows, progress.results)) return <div className="mx-auto max-w-lg text-center">
-    <h1 className="text-2xl font-semibold">Finish the earlier lessons in this unit first</h1>
-    <a href="/home" className="mt-4 inline-block text-[var(--brand)] underline">Back to course map</a>
+  if (!progress.ready) return <p role="status"><LearnerText text={"Loading your lesson…"} /></p>;
+  if (!lessonAvailable(unit, level, progress.rows, progress.results, units)) return <div className="mx-auto max-w-lg text-center">
+    <h1 className="text-2xl font-semibold"><LearnerText text={"Finish the earlier lessons first"} /></h1>
+    <a href="/home" className="mt-4 inline-block text-[var(--brand)] underline"><LearnerText text={"Back to course map"} /></a>
   </div>;
   return children;
 }

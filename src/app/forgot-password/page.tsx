@@ -1,3 +1,5 @@
+import { LearnerText } from "@/components/LearnerText";
+import { CartoonScene } from "@/components/CartoonScene";
 import type { Metadata } from "next";
 import { ForgotPasswordForm } from "@/components/ForgotPasswordForm";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -11,16 +13,13 @@ export const metadata: Metadata = {
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="learner-world learner-recovery">
       <SiteHeader />
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-12 sm:px-6 sm:py-16">
-        <h1 className="text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl">
-          Forgot password
-        </h1>
-        <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--muted)]">
-          Enter your email and we will send a link to reset your password.
-        </p>
+      <main id="learner-main" tabIndex={-1} className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-12 sm:px-6 sm:py-16">
+        <CartoonScene scene="key" />
+        <h1 className="text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl"><LearnerText text={"Forgot password"} /></h1>
+        <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--muted)]"><LearnerText text={"Enter your email and we will send a link to reset your password."} /></p>
 
         <ForgotPasswordForm />
       </main>

@@ -10,7 +10,7 @@ declare global {
   interface Window {
     google?: { accounts: { id: {
       initialize: (config: { client_id: string; nonce: string; callback: (response: { credential?: string }) => void; auto_select: boolean }) => void;
-      renderButton: (parent: HTMLElement, options: { theme: string; size: string; text: string; width: number; shape?: string; locale?: string }) => void;
+      renderButton: (parent: HTMLElement, options: { type?: string; theme: string; size: string; text: string; width: number; shape?: string; locale?: string }) => void;
     } } };
     AppleID?: { auth: {
       init: (config: { clientId: string; scope: string; redirectURI: string; usePopup: boolean; nonce: string; state: string }) => void;
@@ -122,8 +122,9 @@ export function SocialSignIn({ returnTo = "/home", appearance = "default" }: { r
           window.google.accounts.id.initialize({ client_id: GOOGLE_WEB_CLIENT_ID, nonce, auto_select: false,
             callback: result => { if (!cancelled && result.credential) void finish(result.credential); } });
           googleRef.current.replaceChildren();
-          const width = Math.min(400, googleRef.current.parentElement?.clientWidth || 320);
-          window.google.accounts.id.renderButton(googleRef.current, { theme: "outline", size: "large", text: "continue_with", width, shape: appearance === "cartoon" ? "pill" : "rectangular", locale: locale === "pt" ? "pt-PT" : "en" });
+          // Width below 200px keeps Google's button generic (no name/email).
+          const width = Math.min(199, Math.max(120, (googleRef.current.parentElement?.clientWidth || 199) - 4));
+          window.google.accounts.id.renderButton(googleRef.current, { theme: "outline", size: "large", text: "continue_with", width, shape: "pill", locale: locale === "pt" ? "pt-PT" : "en" });
           setGoogleReady(locale);
         })());
         if (APPLE_WEB_CLIENT_ID) tasks.push((async () => {
@@ -155,20 +156,21 @@ export function SocialSignIn({ returnTo = "/home", appearance = "default" }: { r
     } finally { setBusy(false); }
   }
 
-  return <section aria-label={t.social} className={appearance === "cartoon" ? "auth-social" : "mt-6 w-full max-w-sm space-y-3"}>
+  if (!enabled) return null;
+
+  return <section aria-label={t.social} aria-busy={busy} className={appearance === "cartoon" ? "auth-social" : "mt-6 w-full max-w-sm space-y-3"}>
     <div className="social-divider flex items-center gap-3 py-1 text-xs text-[var(--muted)]"><span className="h-px flex-1 bg-[var(--border)]" />{t.orContinue}<span className="h-px flex-1 bg-[var(--border)]" /></div>
     <div className="social-provider social-provider-apple">
       <button type="button" disabled={appleReady !== locale || busy} onClick={() => void signInWithApple()}
         aria-describedby={!APPLE_WEB_CLIENT_ID ? "apple-signin-unavailable" : undefined}
         className="social-apple flex h-11 w-full items-center justify-center gap-3 rounded-lg bg-black px-5 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 disabled:cursor-not-allowed disabled:opacity-60"><AppleMark />{t.apple}</button>
-      {!APPLE_WEB_CLIENT_ID && <p id="apple-signin-unavailable" className="mt-1 text-xs text-[var(--muted)]">{t.appleUnavailable}</p>}
+      {!APPLE_WEB_CLIENT_ID && <span id="apple-signin-unavailable" className="sr-only">{t.appleUnavailable}</span>}
     </div>
-    <div className="social-provider social-provider-google">
+    {GOOGLE_WEB_CLIENT_ID && <div className="social-provider social-provider-google">
       {!googleVisible && <button type="button" disabled aria-describedby={!GOOGLE_WEB_CLIENT_ID ? "google-signin-unavailable" : undefined}
         className="social-google-placeholder flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-[var(--border)] bg-white px-5 text-sm font-semibold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"><GoogleMark />{t.google}</button>}
       <div ref={googleRef} inert={busy} className={`social-google-mounted ${googleVisible ? "" : "hidden"} ${busy ? "pointer-events-none opacity-60" : ""}`} />
-      {!GOOGLE_WEB_CLIENT_ID && <p id="google-signin-unavailable" className="mt-1 text-xs text-[var(--muted)]">{t.googleUnavailable}</p>}
-    </div>
+    </div>}
     {error && <div className="social-error"><p className="text-sm text-red-700" role="alert">{authErrorText(error, errorStatus, locale, "oauth")}</p><button type="button" disabled={busy} onClick={retry} className="mt-2 text-sm font-medium text-[var(--brand)] underline disabled:opacity-60">{t.retrySocial}</button></div>}
   </section>;
 }

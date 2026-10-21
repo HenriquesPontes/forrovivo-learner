@@ -60,9 +60,10 @@ export function completedCount(unit: CurriculumUnit, rows: UnitProgress[], local
   return count;
 }
 
-export function lessonAvailable(unit: CurriculumUnit, level: number, rows: UnitProgress[], local: LessonResult[]) {
+export function lessonAvailable(unit: CurriculumUnit, level: number, rows: UnitProgress[], local: LessonResult[], curriculum: CurriculumUnit[] = [unit]) {
+  const earlierUnitsComplete = curriculum.filter(item => item.number < unit.number).every(item => completedCount(item, rows, local) === item.levels.length);
   const position = unit.levels.findIndex(item => item.number === level);
-  return position >= 0 && position <= completedCount(unit, rows, local);
+  return earlierUnitsComplete && position >= 0 && position <= completedCount(unit, rows, local);
 }
 
 /** Web adds completed lessons; XP, streaks, SRS and mastery remain native-owned. */

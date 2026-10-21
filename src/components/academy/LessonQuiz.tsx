@@ -1,6 +1,11 @@
 "use client";
 
+import { LearnerText, useLearnerCopy } from "@/components/LearnerText";
+
+
 import Link from "next/link";
+import Image from "next/image";
+import { CartoonScene } from "@/components/CartoonScene";
 import { useRef, useState } from "react";
 import type { PathPhrase, SkillFamily } from "@/lib/learning-path";
 import { useLearnerProgress } from "@/components/academy/LearnerProgress";
@@ -10,7 +15,9 @@ type LessonQuizProps = {
   unitNumber: number;
   levelNumber: number;
   unitTitle: string;
+  unitTitlePt?: string;
   levelTitle: string;
+  levelTitlePt?: string;
   skillFamily?: SkillFamily;
   phrases: PathPhrase[];
   distractors: PathPhrase[];
@@ -218,15 +225,19 @@ export function LessonQuiz({
   unitNumber,
   levelNumber,
   unitTitle,
+  unitTitlePt,
   levelTitle,
+  levelTitlePt,
   skillFamily = "phrase",
   phrases,
   distractors,
 }: LessonQuizProps) {
+  const { locale, tr } = useLearnerCopy();
+  const localizePhrase = (phrase: PathPhrase) => ({ ...phrase, english: locale === "pt" ? phrase.portuguese || phrase.english : phrase.english });
   const progress = useLearnerProgress();
   // The parent mounts after hydration and keys each lesson, avoiding random
   // server/client markup differences and effect-driven state resets.
-  const [baseQuestions] = useState(() => buildQuestions(phrases, distractors, skillFamily));
+  const [baseQuestions] = useState(() => buildQuestions(phrases.map(localizePhrase), distractors.map(localizePhrase), skillFamily));
   const [queue, setQueue] = useState<Question[]>(baseQuestions);
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -256,35 +267,28 @@ export function LessonQuiz({
 
   if (baseQuestions.length === 0) {
     return (
-      <p className="text-sm text-[var(--muted)]">
-        This lesson has no phrases yet.
-      </p>
+      <p className="text-sm text-[var(--muted)]"><LearnerText text={"This lesson has no phrases yet."} /></p>
     );
   }
 
   if (done) {
     return (
-      <div className="mx-auto max-w-lg text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--brand)]">
-          Lesson complete
-        </p>
+      <div className="learner-quiz learner-quiz-complete mx-auto max-w-lg text-center">
+        <CartoonScene scene="celebrate" />
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--brand)]"><LearnerText text={"Lesson complete"} /></p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--brand-ink)]">
-          {levelTitle}
+          {locale === "pt" ? levelTitlePt || levelTitle : levelTitle}
         </h2>
-        <p className="mt-3 text-base text-[var(--muted)]">
-          First attempt: {correctCount} of {baseQuestions.length} correct.
-          {inReprise ? " Review complete." : ""}
+        <p className="mt-3 text-base text-[var(--muted)]"><LearnerText text={"First attempt: "} />{correctCount}<LearnerText text={" of "} />{baseQuestions.length}<LearnerText text={" correct."} />{inReprise ? tr(" Review complete.") : ""}
         </p>
-        <p className="mt-3 text-sm text-[var(--muted)]" role="status">{saveMessage}</p>
-        {saveFailed && <button type="button" disabled={saving} onClick={() => void persist()} className="mt-3 font-medium text-[var(--brand)] underline">Retry save</button>}
+        <p className="mt-3 text-sm text-[var(--muted)]" role="status">{tr(saveMessage)}</p>
+        {saveFailed && <button type="button" disabled={saving} onClick={() => void persist()} className="mt-3 font-medium text-[var(--brand)] underline"><LearnerText text={"Retry save"} /></button>}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/home"
             aria-disabled={saving}
             className={`inline-flex h-11 items-center justify-center rounded-full bg-[var(--brand)] px-6 text-sm font-semibold text-white hover:bg-[var(--brand-ink)] ${saving ? "pointer-events-none opacity-60" : ""}`}
-          >
-            Back to course map
-          </Link>
+          ><LearnerText text={"Back to course map"} /></Link>
           <button
             type="button"
             disabled={saving}
@@ -302,9 +306,7 @@ export function LessonQuiz({
               setDone(false);
             }}
             className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--surface)] px-6 text-sm font-semibold text-[var(--foreground)] hover:bg-[#eef3f0]"
-          >
-            Practice again
-          </button>
+          ><LearnerText text={"Practice again"} /></button>
         </div>
       </div>
     );
@@ -350,7 +352,7 @@ export function LessonQuiz({
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg">
+    <div className="learner-quiz mx-auto w-full max-w-lg">
       <div className="mb-6 h-1.5 overflow-hidden rounded-full bg-[#e6ebe8]">
         <div
           className="h-full rounded-full bg-[var(--brand)] transition-[width]"
@@ -360,20 +362,20 @@ export function LessonQuiz({
         />
       </div>
 
+      <Image className="quiz-companion" src={`/images/learning-path/nodes/lesson-${(unitNumber - 1) * 5 + levelNumber}.webp`} width={85} height={85} alt="" aria-hidden="true" />
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
-        {unitTitle}
-        {inReprise ? " · Review" : ""}
+        {locale === "pt" ? unitTitlePt || unitTitle : unitTitle}
+        {inReprise ? tr(" · Review") : ""}
       </p>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-3xl">
-        {levelTitle}
+        {locale === "pt" ? levelTitlePt || levelTitle : levelTitle}
       </h1>
-      <p className="mt-2 text-sm text-[var(--muted)]">
-        Question {index + 1} of {progressTotal}
+      <p className="mt-2 text-sm text-[var(--muted)]"><LearnerText text={"Question"} />{index + 1}<LearnerText text={" of "} />{progressTotal}
       </p>
 
-      <div className="mt-8">
+      <div className="quiz-prompt mt-8">
         <p className="text-sm font-medium text-[var(--muted)]">
-          {question.promptLabel}
+          {tr(question.promptLabel)}
         </p>
         {question.kind === "dialogue" ? (
           <div className="mt-3 space-y-2 rounded-2xl bg-[var(--surface)] px-4 py-3">
@@ -439,9 +441,7 @@ export function LessonQuiz({
                 setUsedBankIndexes((current) => current.slice(0, -1));
               }}
               className="text-sm text-[var(--muted)] underline-offset-4 hover:underline"
-            >
-              Undo
-            </button>
+            ><LearnerText text={"Undo"} /></button>
           ) : null}
         </div>
       ) : (
@@ -481,9 +481,7 @@ export function LessonQuiz({
         <Link
           href="/home"
           className="text-sm text-[var(--muted)] underline-offset-4 hover:text-[var(--foreground)] hover:underline"
-        >
-          Exit
-        </Link>
+        ><LearnerText text={"Exit"} /></Link>
         <button
           type="button"
           disabled={!canCheck}
@@ -502,23 +500,24 @@ export function LessonQuiz({
           }}
           className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--brand)] px-6 text-sm font-semibold text-white hover:bg-[var(--brand-ink)] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {!revealed
+          {tr(!revealed
             ? "Check"
             : index + 1 >= queue.length
               ? inReprise || missed.length === 0
                 ? "Finish"
                 : "Review misses"
-              : "Next"}
+              : "Next")}
         </button>
       </div>
 
       {revealed ? (
         <p
-          className={`mt-4 text-sm font-medium ${
+          role="status"
+          className={`quiz-feedback ${isCorrect ? "quiz-feedback-correct" : "quiz-feedback-review"} mt-4 text-sm font-medium ${
             isCorrect ? "text-[var(--brand)]" : "text-[#7a2e2e]"
           }`}
         >
-          {isCorrect ? "Correct." : `Answer: ${question.answer}`}
+          {isCorrect ? tr("Correct.") : `${tr("Answer:")} ${question.answer}`}
         </p>
       ) : null}
     </div>

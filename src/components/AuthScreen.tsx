@@ -6,7 +6,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { AuthForm } from "@/components/AuthForm";
 import { SocialSignIn } from "@/components/SocialSignIn";
-import { SITE_URL } from "@/lib/constants";
 
 
 function LeafSprig({ className }: { className: string }) {
@@ -37,23 +36,17 @@ export function AuthScreen({ mode, guest = false, className }: { mode: "login" |
   return <div className={`auth-world ${className}`} data-auth-mode={mode} lang={locale === "pt" ? "pt-PT" : "en"}>
     <a href="#auth-form" className="auth-skip">{t.skip}</a>
     <header className="auth-header">
-      <a href={SITE_URL} className="auth-brand" aria-label={t.website}>
+      <a href="/home" className="auth-brand" aria-label="ForroVivo Learner">
         <Image src="/images/app/forro-icon.png" alt="" width={44} height={44} priority />
-        <span>Forro<span className="auth-brand-green">Vivo</span><span className="auth-brand-star" aria-hidden="true">✦</span></span>
+        <span>Forro<span className="auth-brand-green">Vivo</span></span>
       </a>
       <nav aria-label={t.navigation}>
-        <AuthLanguageSwitch />
         <Link href={guest ? "/home" : "/try"} className="auth-guest-link" aria-label={guest ? t.backLessons : t.tryLesson}><span className="auth-guest-label">{guest ? t.backLessons : t.tryLesson}</span><Arrow /></Link>
+        <AuthLanguageSwitch />
       </nav>
     </header>
 
     <main className="auth-main">
-      <div className="auth-island" aria-hidden="true">
-        <Image src="/images/auth/forrovivo-island.webp" alt="" width={460} height={307} sizes="(min-width: 1100px) 340px, 1px" />
-        <p>{t.island}</p>
-      </div>
-      <div className="auth-doodle auth-doodle-one" aria-hidden="true">✦</div>
-      <div className="auth-doodle auth-doodle-two" aria-hidden="true">✧</div>
       <div className="auth-column">
         <div className="auth-sign-wrap">
           <LeafSprig className="auth-sign-leaves auth-sign-leaves-left" />
@@ -74,6 +67,8 @@ export function AuthScreen({ mode, guest = false, className }: { mode: "login" |
         <p className="auth-switch">{login ? t.newHere : t.alreadyHere} <Link href={login ? "/create-account" : "/"}>{login ? t.register : t.login}<Arrow /></Link></p>
       </div>
     </main>
-    <footer className="auth-footer"><span>© {new Date().getUTCFullYear()} LIVLU TECHNOLOGIES LTD</span></footer>
+    <footer className="auth-footer">
+      <span suppressHydrationWarning>© {new Date().getUTCFullYear()} LIVLU TECHNOLOGIES LTD · {t.rights}</span>
+    </footer>
   </div>;
 }
