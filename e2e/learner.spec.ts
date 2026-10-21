@@ -60,6 +60,7 @@ test("a new account gets a short web introduction once, and a guest does not", a
   await expect(page.getByRole("heading", { name: "How much Forro do you know?", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "O que te traz ao Forro?", exact: true })).toHaveCount(0);
 
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.getByRole("button", { name: "Log out", exact: true }).click();
   await expect(page).toHaveURL("/");
   await page.getByLabel("Email", { exact: true }).fill("quick@example.test");

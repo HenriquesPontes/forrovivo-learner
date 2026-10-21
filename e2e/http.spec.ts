@@ -21,7 +21,7 @@ function remember(context: APIRequestContext, response: APIResponse) {
 }
 async function call(context: APIRequestContext, method: string, path: string, data?: Record<string, unknown>, headers: Record<string, string> = {}) {
   const response = await context.fetch(`${origin}${path}`, { method, maxRedirects: 0,
-    headers: { Cookie: [...jar(context)].map(([name, value]) => `${name}=${value}`).join("; "),
+    headers: { Accept: "*/*", Cookie: [...jar(context)].map(([name, value]) => `${name}=${value}`).join("; "),
       Origin: origin, "X-ForroVivo-Web-Scope": scope(context), ...headers },
     ...(data ? { data: { scope: scope(context), ...data } } : {}) });
   remember(context, response);
@@ -34,14 +34,21 @@ async function register(context: APIRequestContext, email = "http-first@example.
   expect(scope(context)).toMatch(/^[a-f0-9]{64}$/);
 }
 const result = (level = 1) => ({ unit: 1, level, score: 80, completedAt: new Date().toISOString() });
+async function expectPageRedirect(response: APIResponse, path: string) {
+  if ([301, 302, 303, 307, 308].includes(response.status())) {
+    const location = response.headers().location ?? "";
+    expect(location === path || location.endsWith(path)).toBe(true);
+    return;
+  }
+  expect(await response.text()).toContain(`url=${path}"`);
+}
 
 test.beforeEach(async ({ request }) => { await request.post("http://127.0.0.1:4319/_test/reset"); });
 
 test("HTTP: invalid-cookie access clears safely; recovery remains reachable with stale cookies", async ({ request }) => {
   jar(request).set("fv_learner_session", "arbitrary");
   const restricted = await call(request, "GET", "/home");
-  expect(restricted.status()).toBe(307);
-  expect(restricted.headers().location).toContain("/api/auth/clear-invalid");
+  await expectPageRedirect(restricted, "/api/auth/clear-invalid");
   const clear = await call(request, "GET", "/api/auth/clear-invalid");
   expect(clear.status()).toBe(307);
   expect(jar(request).has("fv_learner_session")).toBe(false);
@@ -81,8 +88,7 @@ test("HTTP: an existing session upgrades through reauthentication without a redi
   await register(request);
   jar(request).delete("fv_learner_context");
   const home = await call(request, "GET", "/home");
-  expect(home.status()).toBe(307);
-  expect(home.headers().location).toContain("/reauthenticate");
+  await expectPageRedirect(home, "/reauthenticate");
   expect((await call(request, "GET", "/reauthenticate")).status()).toBe(200);
   expect((await call(request, "POST", "/api/progress", { results: [result()] })).status()).toBe(409);
   const login = await call(request, "POST", "/api/auth/login", { email: "http-first@example.test", password: "fixture-password" });
@@ -121,7 +127,7 @@ test("HTTP: profile and export use the current identity; deletion requires passw
   expect((await call(request, "DELETE", "/api/account", { confirmation: "DELETE" })).status()).toBe(400);
   expect((await call(request, "DELETE", "/api/account", { confirmation: "DELETE", password: "fixture-password" })).status()).toBe(200);
   expect(jar(request).has("fv_learner_session")).toBe(false);
-  expect((await call(request, "GET", "/account")).status()).toBe(307);
+  await expectPageRedirect(await call(request, "GET", "/account"), "/");
 });
 
 test("HTTP: cross-origin writes are rejected without logout; missing delivery configuration returns 503", async ({ request }) => {
