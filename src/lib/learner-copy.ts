@@ -153,7 +153,11 @@ export const learnerPortuguese: Record<string, string> = {
   "If an account exists for that email, we sent reset instructions.": "Se existir uma conta com esse e-mail, enviámos as instruções de recuperação.",
   "Choose an answer": "Escolher uma resposta",
   "Continue learning": "Continuar a aprender",
-  "Answer:": "Resposta:"
+  "Answer:": "Resposta:",
+  "you@example.com": "tu@exemplo.com",
+  "The service is unavailable. Please try again.": "O serviço está indisponível. Tenta novamente.",
+  "Reload this page and try again.": "Atualiza a página e tenta novamente.",
+  "Account deletion was not confirmed.": "A eliminação da conta não foi confirmada."
 };
 
 export function translateLearner(text: string, locale: AuthLocale): string {

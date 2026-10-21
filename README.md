@@ -2,13 +2,13 @@
 
 Web Academy at [learn.forrovivo.com](https://learn.forrovivo.com), deployed through the `forrovivo-learner` Vercel project. The iOS and Android apps remain the primary learning surfaces. Catalog, learner accounts and cloud progress use the existing Platform `/app/v1` API.
 
-Guests can complete Unit 1. An account opens the full Forro course; lessons within each unit unlock in order. The catalog inspected on 21 October contains 15 units, 75 levels and 358 phrases. Linguistic content stays in Research and the remote catalog.
+A validated account is required for every lesson; lessons within each unit unlock in order. The catalog inspected on 21 October contains 15 units, 75 levels and 358 phrases. Linguistic content stays in Research and the remote catalog.
 
-The [21 October remediation report](docs/REMEDIATION_2026-10-21.md) records the source changes, verification and remaining release gates. These local changes have not been deployed.
+The [21 October remediation report](docs/REMEDIATION_2026-10-21.md) records the source changes, verification and remaining release gates. See the [22 October current status](docs/CURRENT_STATUS_2026-10-22.md) for subsequent committed changes and fresh test results. Deployment mapping has not been reverified.
 
 ## Accounts and progress
 
-Guest results persist in this browser. Account results first enter an account-specific local outbox, then sync to the existing cloud progress API. Failed syncs remain available for retry. Learners explicitly choose whether to add guest results to their signed-in account. The browser cache contains completion counts and scores, with no bearer token.
+The public guest-learning entry is retired. Account results first enter an account-specific local outbox, then sync to the existing cloud progress API. Failed syncs remain available for retry. Legacy guest-progress handling remains in source; it does not enable anonymous lessons. The browser cache contains completion counts and scores, with no bearer token.
 
 Cloud lessons use the native `path_uN` IDs and contiguous `completedLessonCount`. Replays do not inflate completion. Web preserves the existing native snapshot fields and updates lesson counts/scores; the backend merges those counts monotonically. Other snapshot fields still use the backend's existing last-write-wins policy. Concurrent native SRS/bookmark edits need a coordinated partial-update API for stronger conflict protection.
 
@@ -21,7 +21,7 @@ Protected pages validate the session against Platform. A signed HttpOnly context
 | Route | Purpose |
 | --- | --- |
 | `/`, `/login` | Email login; configured Apple/Google sign-in |
-| `/try` | Start or resume guest lessons |
+| `/try` | Clear the legacy guest cookie and redirect to login |
 | `/home` | Course map and sync status |
 | `/academy/[unit]/[level]` | Lesson quiz and durable completion |
 | `/create-account` | Website email registration and configured social sign-in |
@@ -57,10 +57,10 @@ Set `API_ORIGIN` to the intended backend and `LEARN_ORIGIN` to the canonical por
 | `RESEND_API_KEY` | Required for password-reset delivery; missing delivery config fails before requesting a backend token |
 | `RESEND_FROM_EMAIL` | Verified sender; defaults to `ForroVivo <hello@forrovivo.com>` |
 | `NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Optional, read at build time; configure the matching Worker audience and Google web origin |
-| `NEXT_PUBLIC_APPLE_WEB_CLIENT_ID` | Optional Apple Services ID, read at build time; configure the matching Worker audience and Apple association |
+| `NEXT_PUBLIC_APPLE_WEB_CLIENT_ID` | Build-time override; defaults to `com.forrovivo.learner.web`. Verify the matching Worker audience and Apple association |
 | `NEXT_PUBLIC_APPLE_WEB_REDIRECT_URI` | Exact registered Apple web return URL; default `https://learn.forrovivo.com/` |
 
-Empty provider IDs leave a disabled, clearly unavailable button and do not load the provider SDK. Keep secrets in deployment settings or ignored local configuration. Source Sans 3 and the public site's Nunito are bundled locally with OFL licenses/provenance in `src/app/fonts`; builds do not download them from Google. The login/registration pages use the public site's cartoon design language and the supplied layout reference. See [login design and social setup](docs/AUTH_UI_2026-10-21.md) for provider activation and verification limits.
+An absent Google ID leaves Google unavailable. Apple uses its default Services ID even when its override is empty; off-origin or HTTP previews link to the configured secure Apple return origin. Keep secrets in deployment settings or ignored local configuration. Source Sans 3 and the public site's Nunito are bundled locally with OFL licenses/provenance in `src/app/fonts`; builds do not download them from Google. The login/registration pages use the public site's cartoon design language and the supplied layout reference. See [login design and social setup](docs/AUTH_UI_2026-10-21.md) for provider activation and verification limits.
 
 ## Verification
 
@@ -86,4 +86,8 @@ This optional path requires the Platform checkout and its dependencies. It uses 
 
 CI enforces production dependency audit, zero-warning lint, regression tests, typecheck, build and WebKit/HTTP checks. Remote CI has not been verified in this pass. The full dependency audit currently flags an unpatched development-only `braces` chain; production dependencies audit clean. See the remediation report for details.
 
-Login and registration support EN/PT with a saved browser preference. The Academy remains in English. Web currently saves lesson completion and first-attempt score. Full bilingual UI, web audio, XP, streaks, hearts, SRS, mistake review and native feature parity remain separate product decisions. Never store linguistic JSON, Admin credentials, real learner data or secrets in this repository.
+Login and registration support EN/PT with a saved browser preference. Dashboard and lesson source also include EN/PT translation support; full string coverage and browser acceptance remain unverified. Web currently saves lesson completion and first-attempt score. Full bilingual UI, web audio, XP, streaks, hearts, SRS, mistake review and native feature parity remain separate product decisions. Never store linguistic JSON, Admin credentials, real learner data or secrets in this repository.
+
+Current UI changes and the pending screen-size acceptance matrix are recorded in the [22 October documentation follow-up](docs/AUTH_UI_2026-10-21.md#documentation-follow-up--22-october-2026). The earlier single-viewport result does not certify the latest registration spacing or all screen sizes.
+
+Latest local acceptance: **59 regression tests**, lint/build/typecheck and both six-case HTTPS suites pass. The [acceptance report](docs/LEARNER_ACCEPTANCE_2026-10-22.json) records 104 responsive cases defined but blocked before page startup, plus the remaining real-provider/email gates.
