@@ -14,9 +14,9 @@ export const ACCOUNT_HEALTH_URL = `${API_ORIGIN}/app/v1/account/health`;
 export const SITE_URL = "https://forrovivo.com";
 export const LEARN_ORIGIN = "https://learn.forrovivo.com";
 
-/** Optional Apple Sign In on the web (Services ID). Empty = social button disabled. */
+/** Registered Apple web Services ID, grouped with the existing ForroVivo app. */
 export const APPLE_WEB_CLIENT_ID =
-  process.env.NEXT_PUBLIC_APPLE_WEB_CLIENT_ID?.trim() || "";
+  process.env.NEXT_PUBLIC_APPLE_WEB_CLIENT_ID?.trim() || "com.forrovivo.learner.web";
 
 /** Must match the Apple Services ID return URL. */
 export const APPLE_WEB_REDIRECT_URI =

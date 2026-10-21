@@ -72,6 +72,7 @@ export function SocialSignIn({ returnTo = "/home", appearance = "default" }: { r
   const [generation, setGeneration] = useState(0);
   const [appleReady, setAppleReady] = useState<AuthLocale | null>(null);
   const [googleReady, setGoogleReady] = useState<AuthLocale | null>(null);
+  const [appleWebOnly, setAppleWebOnly] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [errorStatus, setErrorStatus] = useState(0);
@@ -128,6 +129,10 @@ export function SocialSignIn({ returnTo = "/home", appearance = "default" }: { r
           setGoogleReady(locale);
         })());
         if (APPLE_WEB_CLIENT_ID) tasks.push((async () => {
+          if (window.location.origin !== new URL(APPLE_WEB_REDIRECT_URI).origin || window.location.protocol !== "https:") {
+            setAppleWebOnly(true);
+            return;
+          }
           if (!window.AppleID) await loadScript("https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js");
           if (cancelled) return;
           if (!window.AppleID) throw new Error("Apple sign-in did not load.");
@@ -161,9 +166,10 @@ export function SocialSignIn({ returnTo = "/home", appearance = "default" }: { r
   return <section aria-label={t.social} aria-busy={busy} className={appearance === "cartoon" ? "auth-social" : "mt-6 w-full max-w-sm space-y-3"}>
     <div className="social-divider flex items-center gap-3 py-1 text-xs text-[var(--muted)]"><span className="h-px flex-1 bg-[var(--border)]" />{t.orContinue}<span className="h-px flex-1 bg-[var(--border)]" /></div>
     <div className="social-provider social-provider-apple">
-      <button type="button" disabled={appleReady !== locale || busy} onClick={() => void signInWithApple()}
+      {appleWebOnly ? <a href={APPLE_WEB_REDIRECT_URI} className="social-apple flex h-11 w-full items-center justify-center gap-3 rounded-lg" aria-label={locale === "pt" ? "Continuar com Apple no site seguro" : "Continue with Apple on the secure site"}><AppleMark />{t.apple}</a> : <button type="button" disabled={appleReady !== locale || busy} onClick={() => void signInWithApple()}
         aria-describedby={!APPLE_WEB_CLIENT_ID ? "apple-signin-unavailable" : undefined}
-        className="social-apple flex h-11 w-full items-center justify-center gap-3 rounded-lg bg-black px-5 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 disabled:cursor-not-allowed disabled:opacity-60"><AppleMark />{t.apple}</button>
+        className="social-apple flex h-11 w-full items-center justify-center gap-3 rounded-lg bg-black px-5 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 disabled:cursor-not-allowed disabled:opacity-60"><AppleMark />{t.apple}</button>}
+      {appleWebOnly && <p className="mt-2 text-xs text-[var(--muted)]">{locale === "pt" ? "Abre o site seguro para entrar com Apple." : "Opens the secure site for Apple sign-in."}</p>}
       {!APPLE_WEB_CLIENT_ID && <span id="apple-signin-unavailable" className="sr-only">{t.appleUnavailable}</span>}
     </div>
     {GOOGLE_WEB_CLIENT_ID && <div className="social-provider social-provider-google">

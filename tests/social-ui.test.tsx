@@ -1,14 +1,15 @@
 // @vitest-environment jsdom
+// @vitest-environment-options {"url":"https://learn.example.test/"}
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 
-const setup = vi.hoisted(() => ({ google: "", apple: "", replace: vi.fn(), refresh: vi.fn() }));
+const setup = vi.hoisted(() => ({ google: "", apple: "", appleRedirect: "https://learn.example.test/", replace: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => setup }));
 vi.mock("@/lib/constants", () => ({
   get GOOGLE_WEB_CLIENT_ID() { return setup.google; },
   get APPLE_WEB_CLIENT_ID() { return setup.apple; },
-  APPLE_WEB_REDIRECT_URI: "https://learn.example.test/",
+  get APPLE_WEB_REDIRECT_URI() { return setup.appleRedirect; },
   SITE_URL: "https://site.example.test",
 }));
 import { SocialSignIn } from "@/components/SocialSignIn";
@@ -50,7 +51,7 @@ async function fill(name: string, value: string) {
 }
 beforeEach(() => {
   vi.clearAllMocks();
-  setup.google = ""; setup.apple = "";
+  setup.google = ""; setup.apple = ""; setup.appleRedirect = "https://learn.example.test/";
   delete window.google; delete window.AppleID;
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   fetcher.mockImplementation(async (path) => path === "/api/auth/challenge" ? Response.json({ nonce }) : Response.json({ status: "ok" }));
@@ -204,4 +205,15 @@ it("Portuguese registration localizes labels and the pending-account message", a
   await act(async () => { node.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
   expect(node.querySelector('[role="status"]')?.textContent).toContain("Este e-mail poderá já ter uma conta.");
   expect(setup.replace).not.toHaveBeenCalled();
+});
+
+
+it("uses the registered secure site instead of starting an Apple popup on a different origin", async () => {
+  setup.apple = "com.example.fixture.web";
+  setup.appleRedirect = "https://learn.forrovivo.com/";
+  appleSdk();
+  await mount();
+  expect(appleInit).not.toHaveBeenCalled();
+  expect(node.querySelector('a[href="https://learn.forrovivo.com/"]')?.textContent).toContain("Continue with Apple");
+  expect(node.textContent).toContain("Opens the secure site for Apple sign-in.");
 });

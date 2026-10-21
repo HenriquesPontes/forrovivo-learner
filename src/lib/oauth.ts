@@ -1,4 +1,5 @@
 import { authLocale, AUTH_LOCALE_COOKIE } from "@/lib/auth-copy";
+import { APPLE_WEB_CLIENT_ID } from "@/lib/constants";
 import { cookies } from "next/headers";
 import { authResponse, OAUTH_COOKIE, clearCookieOptions, requireWebSessionConfiguration } from "@/lib/auth";
 import { backend, bearer, BackendError, isAccount } from "@/lib/backend";
@@ -29,7 +30,7 @@ export async function oauth(request: Request) {
     }
     const provider = claims.iss === "https://appleid.apple.com" ? "apple" :
       ["accounts.google.com", "https://accounts.google.com"].includes(String(claims.iss)) ? "google" : null;
-    const clientId = provider === "apple" ? process.env.NEXT_PUBLIC_APPLE_WEB_CLIENT_ID?.trim() :
+    const clientId = provider === "apple" ? process.env.NEXT_PUBLIC_APPLE_WEB_CLIENT_ID?.trim() || APPLE_WEB_CLIENT_ID :
       provider === "google" ? process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() : "";
     if (!clientId || claims.aud !== clientId) throw new RequestError(401, "This sign-in provider is not configured for the website.");
     // Only the Worker establishes identity; decoded claims above are nonce/audience hints.
