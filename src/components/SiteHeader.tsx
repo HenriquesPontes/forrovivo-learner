@@ -113,6 +113,7 @@ export function SiteHeader({ signedIn = false, guest = false }: SiteHeaderProps)
                 forrovivo.com
               </a>
               <LogoutButton />
+              <Link href="/account" className="text-sm font-medium text-[var(--brand)] hover:underline">Account</Link>
             </>
           ) : guest ? (
             <>

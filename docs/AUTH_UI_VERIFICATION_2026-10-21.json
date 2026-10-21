@@ -1,0 +1,54 @@
+{
+  "checkedAt": "2026-10-21T13:52:37.123Z",
+  "url": "http://localhost:3002",
+  "mode": "Webpack development with polling",
+  "checks": {
+    "login200": true,
+    "registration200": true,
+    "cartoonShell": true,
+    "bothSocialOptions": true,
+    "appleHonestUnavailable": true,
+    "googleLocallyConfigured": true,
+    "passwordVisibility": true,
+    "cssIncludesResponsiveDesign": true,
+    "oauthPopupPolicy": true,
+    "devReferrerPolicy": true
+  },
+  "allPassed": true,
+  "visualBrowserAcceptance": "not independently executed",
+  "productionWrites": false,
+  "layoutFollowup": {
+    "checkedAt": "2026-10-21T13:59:51.717172+00:00",
+    "browser": "Existing open Codex in-app browser; temporary development-only DOM measurement removed after verification",
+    "viewport": {
+      "width": 1135,
+      "height": 853
+    },
+    "document": {
+      "scrollWidth": 1135,
+      "scrollHeight": 853
+    },
+    "footerBottom": 853,
+    "horizontalScroll": false,
+    "verticalScroll": false,
+    "selectedProviderNoteRemoved": true,
+    "backToWebsiteLinkRemoved": true,
+    "method": "Live development console measurement after fonts and social controls rendered; both removals also checked in HTTP HTML",
+    "smallerScreens": "Compact spacing at shorter heights; natural overflow remains available when required by zoom, keyboard or small viewport to keep controls accessible"
+  },
+  "localization": {
+    "checkedAt": "2026-10-21T14:15:19.556635+00:00",
+    "languages": [
+      "en",
+      "pt-PT"
+    ],
+    "switch": "EN/PT",
+    "preferenceCookie": "fv_learner_locale",
+    "loginAndRegistrationSsrPassed": true,
+    "preservesTypedCredentials": true,
+    "portugueseLoginErrorsPassed": true,
+    "portuguesePendingRegistrationPassed": true,
+    "removedElementsRemainAbsent": true,
+    "portugueseViewportMeasurement": "Not independently captured in this pass; prior English viewport-fit measurement is recorded separately."
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "checkedAt": "2026-10-21T14:15:19.563936+00:00",
+  "baseCommit": "cd451ab38050c596fb3b7906b442477bfe9f3f32",
+  "worktreeChangesCommitted": false,
+  "deployed": false,
+  "sourceFingerprint": {
+    "algorithm": "SHA-256",
+    "value": "f07cd1a538ec24cb18dbf5a884e845b1f90a7fa61572c4587bdda6e08e49e0cd",
+    "scope": "src, tests, e2e, workflows, auth public assets and listed package/build/config files; excludes private environment and generated output",
+    "files": 83
+  },
+  "checks": {
+    "regressionAndDom": {
+      "command": "npm test",
+      "passed": 46,
+      "files": 5
+    },
+    "lint": {
+      "command": "npm run lint -- --max-warnings=0",
+      "exitCode": 0
+    },
+    "build": {
+      "command": "npm run build",
+      "exitCode": 0,
+      "next": "16.4.1",
+      "bundler": "webpack",
+      "fonts": "Bundled local Source Sans 3 and Nunito; no Google font build requests"
+    },
+    "typecheck": {
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "localPlatformHttps": {
+      "passed": 6,
+      "total": 6,
+      "report": "LOCAL_PLATFORM_VERIFICATION_2026-10-21.json"
+    },
+    "productionDependencyAudit": {
+      "vulnerabilities": 0,
+      "report": "PRODUCTION_DEPENDENCY_AUDIT_2026-10-21.json"
+    },
+    "fullDependencyAudit": {
+      "high": 5,
+      "production": 0,
+      "report": "FULL_DEPENDENCY_AUDIT_2026-10-21.json",
+      "status": "open unpatched development dependency chain"
+    },
+    "standaloneFixtureHttps": {
+      "passed": 6,
+      "total": 6,
+      "report": "STANDALONE_FIXTURE_VERIFICATION_2026-10-21.json"
+    },
+    "loginAndSocialUi": {
+      "report": "AUTH_UI_VERIFICATION_2026-10-21.json",
+      "googleWebIdConfiguredLocally": true,
+      "appleWebIdConfiguredLocally": false,
+      "realProviderSignInVerified": false,
+      "languages": [
+        "en",
+        "pt-PT"
+      ]
+    }
+  },
+  "nativeSafari": "blocked before driver/page startup",
+  "playwrightWebKit": "blocked before page startup",
+  "productionWrites": false
+}

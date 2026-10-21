@@ -1,5 +1,3 @@
-import { apiOrigin } from "@/lib/auth";
-
 export type PathPhrase = {
   id: string;
   forro: string;
@@ -68,10 +66,10 @@ function parseSkillFamily(raw: unknown): SkillFamily {
 }
 
 function asInt(value: number | string | undefined): number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "number" && Number.isSafeInteger(value)) return value;
   if (typeof value === "string") {
-    const n = Number.parseInt(value, 10);
-    return Number.isFinite(n) ? n : 0;
+    const n = /^\d+$/.test(value) ? Number(value) : 0;
+    return Number.isSafeInteger(n) ? n : 0;
   }
   return 0;
 }
@@ -83,7 +81,9 @@ export function parseLearningPath(payload: unknown): CurriculumUnit[] {
 
   const rows = entries
     .map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
       const row = entry as RawEntry;
+      if (typeof row.id !== "string" || !row.id.trim() || typeof row.forro_text !== "string" || typeof row.translation_en !== "string") return null;
       if (row.kind && row.kind !== "path") return null;
       const forro = String(row.forro_text ?? "").trim();
       const english = String(row.translation_en ?? "").trim();
@@ -159,19 +159,6 @@ export function parseLearningPath(payload: unknown): CurriculumUnit[] {
     });
 }
 
-export async function fetchForroCurriculum(): Promise<CurriculumUnit[]> {
-  const response = await fetch(
-    `${apiOrigin()}/app/v1/catalog/forro/learning_path.json`,
-    {
-      headers: { Accept: "application/json" },
-      next: { revalidate: 3600 },
-    },
-  );
-  if (!response.ok) {
-    throw new Error(`Catalog unavailable (${response.status})`);
-  }
-  return parseLearningPath(await response.json());
-}
 
 export function findLevel(
   units: CurriculumUnit[],

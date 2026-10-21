@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-10-21T13:11:48.348Z",
+  "readOnly": true,
+  "origin": "https://api.forrovivo.com",
+  "sourceEntries": 358,
+  "units": 15,
+  "levels": 75,
+  "phrases": 358,
+  "nativeUnitIds": [
+    "path_u1",
+    "path_u2",
+    "path_u3",
+    "path_u4",
+    "path_u5",
+    "path_u6",
+    "path_u7",
+    "path_u8",
+    "path_u9",
+    "path_u10",
+    "path_u11",
+    "path_u12",
+    "path_u13",
+    "path_u14",
+    "path_u15"
+  ],
+  "allSourceEntriesAccepted": true,
+  "ok": true
+}

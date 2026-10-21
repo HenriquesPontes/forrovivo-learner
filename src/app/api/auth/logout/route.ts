@@ -1,16 +1,9 @@
-import { NextResponse } from "next/server";
-import { GUEST_COOKIE, SESSION_COOKIE } from "@/lib/auth";
+import { clearSessionCookies } from "@/lib/auth";
+import { json, sameOrigin, routeError } from "@/lib/http";
 
-export async function POST() {
-  const response = NextResponse.json({ status: "ok" });
-  const clear = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: 0,
-  };
-  response.cookies.set(SESSION_COOKIE, "", clear);
-  response.cookies.set(GUEST_COOKIE, "", clear);
-  return response;
+export async function POST(request: Request) {
+  try {
+    sameOrigin(request);
+    return clearSessionCookies(json({ status: "ok" }), true);
+  } catch (error) { return routeError(error); }
 }

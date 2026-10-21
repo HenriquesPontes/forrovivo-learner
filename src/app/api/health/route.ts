@@ -6,5 +6,5 @@ export const dynamic = "force-dynamic";
 /** Live Learning API probes for the learner portal status strip. */
 export async function GET() {
   const health = await getLearningHealth();
-  return NextResponse.json(health, { status: health.ok ? 200 : 503 });
+  return NextResponse.json(health, { status: health.ok ? 200 : 503, headers: { "Cache-Control": "no-store" } });
 }

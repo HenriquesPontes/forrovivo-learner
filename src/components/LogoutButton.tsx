@@ -10,19 +10,23 @@ type LogoutButtonProps = {
 export function LogoutButton({ label = "Log out" }: LogoutButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function onClick() {
     setLoading(true);
+    setError("");
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } finally {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.status !== "ok") throw new Error("logout failed");
       router.replace("/");
       router.refresh();
-    }
+    } catch { setError("Could not log out. Please try again."); }
+    finally { setLoading(false); }
   }
 
   return (
-    <button
+    <span className="inline-flex flex-col items-end"><button
       type="button"
       onClick={onClick}
       disabled={loading}
@@ -30,5 +34,6 @@ export function LogoutButton({ label = "Log out" }: LogoutButtonProps) {
     >
       {loading ? "Signing out…" : label}
     </button>
+    {error && <span role="alert" className="mt-1 text-xs text-red-700">{error}</span>}</span>
   );
 }

@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { ResetPasswordForm } from "@/components/ResetPasswordForm";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { readSessionToken } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Reset password",
@@ -16,9 +14,6 @@ type ResetPasswordPageProps = {
 };
 
 export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
-  const session = await readSessionToken();
-  if (session) redirect("/home");
-
   const params = await searchParams;
   const token = typeof params.token === "string" ? params.token.trim() : "";
 

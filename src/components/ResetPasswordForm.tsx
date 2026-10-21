@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { MIN_PASSWORD_LENGTH } from "@/lib/auth";
+import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from "@/lib/validation";
 
 type ResetPasswordFormProps = {
   token: string;
@@ -33,8 +33,8 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password }),
       });
-      const data: { message?: string } = await response.json().catch(() => ({}));
-      if (!response.ok) {
+      const data: { status?: string; message?: string } = await response.json().catch(() => ({}));
+      if (!response.ok || data.status !== "ok") {
         setStatus("error");
         setMessage(data.message || "Something went wrong. Please try again.");
         return;
@@ -74,6 +74,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           name="password"
           required
           minLength={MIN_PASSWORD_LENGTH}
+          maxLength={MAX_PASSWORD_LENGTH}
           autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
@@ -90,6 +91,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           name="confirm"
           required
           minLength={MIN_PASSWORD_LENGTH}
+          maxLength={MAX_PASSWORD_LENGTH}
           autoComplete="new-password"
           value={confirm}
           onChange={(event) => setConfirm(event.target.value)}

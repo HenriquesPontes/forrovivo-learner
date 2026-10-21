@@ -3,7 +3,7 @@ export const APP_STORE_URL = "https://apps.apple.com/app/id6751409176";
 
 /** Google Play listing for ForroVivo. */
 export const PLAY_STORE_URL =
-  "https://play.google.com/store/apps/details?id=com.hen.forrovivo";
+  "https://play.google.com/store/apps/details?id=com.telanon.forrovivo";
 
 /** Learning catalog API (Cloudflare Worker). */
 export const API_ORIGIN = "https://api.forrovivo.com";

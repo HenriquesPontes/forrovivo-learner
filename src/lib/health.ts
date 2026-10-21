@@ -1,4 +1,4 @@
-import { ACCOUNT_HEALTH_URL, CATALOG_HEALTH_URL } from "@/lib/constants";
+import { apiOrigin, learnOrigin } from "@/lib/auth";
 
 export type Probe = {
   name: string;
@@ -21,7 +21,8 @@ async function probe(name: string, url: string): Promise<Probe> {
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(8000),
     });
-    return { name, ok: res.ok, status: res.status };
+    const body = await res.json().catch(() => null);
+    return { name, ok: res.ok && body?.status === "ok" && (name !== "account" || body.d1 === "ok"), status: res.status };
   } catch (error) {
     return {
       name,
@@ -35,13 +36,13 @@ async function probe(name: string, url: string): Promise<Probe> {
 /** Live Learning API probes used by the portal home and /api/health. */
 export async function getLearningHealth(): Promise<LearningHealth> {
   const [catalog, account] = await Promise.all([
-    probe("catalog", CATALOG_HEALTH_URL),
-    probe("account", ACCOUNT_HEALTH_URL),
+    probe("catalog", `${apiOrigin()}/app/v1/catalog/health`),
+    probe("account", `${apiOrigin()}/app/v1/account/health`),
   ]);
 
   return {
     ok: catalog.ok && account.ok,
-    host: "learn.forrovivo.com",
+    host: new URL(learnOrigin()).hostname,
     probes: { catalog, account },
     checkedAt: new Date().toISOString(),
   };

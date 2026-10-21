@@ -1,7 +1,11 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { RequestError, json } from "@/lib/http";
+export { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, validateEmail, validatePassword } from "@/lib/validation";
+
 export const SESSION_COOKIE = "fv_learner_session";
 export const GUEST_COOKIE = "fv_learner_guest";
-export const MIN_PASSWORD_LENGTH = 8;
-export const MAX_PASSWORD_LENGTH = 128;
+export const SCOPE_COOKIE = "fv_learner_context";
+export const OAUTH_COOKIE = "fv_learner_oauth";
 
 export type AuthSuccess = {
   status: "ok";
@@ -20,19 +24,33 @@ export type AuthErrorBody = {
 };
 
 export function apiOrigin(): string {
-  return process.env.API_ORIGIN?.trim() || "https://api.forrovivo.com";
+  return configuredOrigin(process.env.API_ORIGIN?.trim() || "https://api.forrovivo.com");
 }
 
 export function learnOrigin(): string {
-  const fromEnv = process.env.LEARN_ORIGIN?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
-  return "https://learn.forrovivo.com";
+  return configuredOrigin(process.env.LEARN_ORIGIN?.trim() || "https://learn.forrovivo.com");
+}
+
+function configuredOrigin(raw: string) {
+  const url = new URL(raw);
+  if (url.username || url.password || url.search || url.hash || url.pathname !== "/" ||
+    (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)))) {
+    throw new Error("Invalid configured service origin");
+  }
+  return url.origin;
 }
 
 export function serviceKeyHeaders(): HeadersInit {
   const key = process.env.LEARNER_WEB_SERVICE_KEY?.trim();
   return key ? { "X-ForroVivo-Service-Key": key } : {};
+}
+
+export function resetDeliveryConfigured() {
+  return Boolean(process.env.LEARNER_WEB_SERVICE_KEY?.trim() && process.env.RESEND_API_KEY?.trim());
+}
+
+export function requireWebSessionConfiguration() {
+  if (!process.env.LEARNER_WEB_SERVICE_KEY?.trim()) throw new RequestError(503, "Sign-in is unavailable. Please try again later.");
 }
 
 export async function sendPasswordResetEmail(options: {
@@ -42,10 +60,7 @@ export async function sendPasswordResetEmail(options: {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.RESEND_FROM_EMAIL?.trim() || "ForroVivo <hello@forrovivo.com>";
   if (!apiKey) {
-    console.info("[auth] RESEND_API_KEY not set; password reset email skipped.");
-    if (process.env.NODE_ENV !== "production") {
-      console.info(`[auth] Reset link for ${options.to}: ${options.resetUrl}`);
-    }
+    console.error("[auth] Password reset delivery is not configured.");
     return "skipped";
   }
 
@@ -68,27 +83,29 @@ export async function sendPasswordResetEmail(options: {
         ].join("\n"),
       }),
       cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      console.error("[auth] Resend failed:", response.status, detail.slice(0, 300));
+      console.error("[auth] Password reset delivery failed:", response.status);
       return "failed";
     }
     return "sent";
-  } catch (err) {
-    console.error("[auth] Resend error:", err);
+  } catch {
+    console.error("[auth] Password reset delivery request failed.");
     return "failed";
   }
 }
 
 export function sessionCookieOptions(expiresAt: string) {
   const expires = new Date(expiresAt);
+  if (!Number.isFinite(expires.getTime()) || expires.getTime() <= Date.now()) throw new RequestError(502, "The account service returned an invalid session.");
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/",
-    expires: Number.isNaN(expires.getTime()) ? undefined : expires,
+    expires,
   };
 }
 
@@ -114,16 +131,54 @@ export function clearGuestCookie(response: {
   });
 }
 
-export function validateEmail(raw: string): string | null {
-  const email = raw.trim().toLowerCase();
-  if (!email || email.length > 320) return null;
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
-  return email;
+export const clearCookieOptions = {
+  httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: 0,
+};
+
+export function clearSessionCookies(response: ReturnType<typeof json>, guest = false) {
+  for (const name of [SESSION_COOKIE, SCOPE_COOKIE, OAUTH_COOKIE, ...(guest ? [GUEST_COOKIE] : [])]) {
+    response.cookies.set(name, "", clearCookieOptions);
+  }
+  return response;
 }
 
-export function validatePassword(raw: string): string | null {
-  if (raw.length < MIN_PASSWORD_LENGTH || raw.length > MAX_PASSWORD_LENGTH) {
-    return null;
+export async function storageScope(value: string) {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Buffer.from(bytes).toString("hex");
+}
+
+function contextSignature(value: string) {
+  const key = process.env.LEARNER_WEB_SERVICE_KEY?.trim();
+  return key ? createHmac("sha256", key).update(`forrovivo-learner-context:v1:${value}`).digest("hex") : null;
+}
+
+/** Signed cache identity and recent-auth time, bound to this exact session. */
+export async function readSessionContext(value: string | undefined, token: string) {
+  if (!value || value.length > 400) return null;
+  const parts = value.split(".");
+  if (parts.length !== 4 || !/^[a-f0-9]{64}$/.test(parts[0]) || !/^\d{13}$/.test(parts[1]) ||
+    !/^[a-f0-9]{64}$/.test(parts[2]) || !/^[a-f0-9]{64}$/.test(parts[3])) return null;
+  const signature = contextSignature(parts.slice(0, 3).join("."));
+  if (!signature || !timingSafeEqual(Buffer.from(signature), Buffer.from(parts[3])) ||
+    parts[2] !== await storageScope(token) || Number(parts[1]) > Date.now()) return null;
+  return { scope: parts[0], authenticatedAt: Number(parts[1]) };
+}
+
+export async function authResponse(data: Record<string, unknown>) {
+  requireWebSessionConfiguration();
+  if (typeof data.token !== "string" || !/^fv_learn_[a-f0-9]{48}$/.test(data.token) ||
+    typeof data.expiresAt !== "string" || !["apple", "google", "email"].includes(String(data.provider)) ||
+    typeof data.accountKey !== "string" || !data.accountKey.startsWith(`${data.provider}:`) ||
+    !/^(apple|google|email):[^\s\u0000-\u001f\u007f]{1,512}$/.test(data.accountKey)) {
+    throw new RequestError(502, "The account service returned an invalid session.");
   }
-  return raw;
+  const options = sessionCookieOptions(data.expiresAt);
+  const scope = await storageScope(data.accountKey);
+  const context = `${scope}.${Date.now()}.${await storageScope(data.token)}`;
+  const signature = contextSignature(context);
+  const response = json({ status: "ok", provider: data.provider });
+  response.cookies.set(SESSION_COOKIE, data.token, options);
+  response.cookies.set(SCOPE_COOKIE, `${context}.${signature}`, options);
+  clearGuestCookie(response);
+  return response;
 }

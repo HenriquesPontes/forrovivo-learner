@@ -1,0 +1,19 @@
+{
+  "retrievedOn": "2026-10-21",
+  "upstream": "https://github.com/google/fonts/tree/main/ofl/sourcesans3",
+  "modified": false,
+  "files": [
+    {
+      "file": "SourceSans3-Variable.ttf",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/sourcesans3/SourceSans3%5Bwght%5D.ttf",
+      "sha256": "042fe2cc0b933e328410d7acbd0aa6a1873dca5aef81875f4bc214b08825c7b9",
+      "bytes": 646340
+    },
+    {
+      "file": "OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/sourcesans3/OFL.txt",
+      "sha256": "09746787287a289323b0ec3cff4d1a4a801331b82b7207c1e186f5d26619a392",
+      "bytes": 4579
+    }
+  ]
+}

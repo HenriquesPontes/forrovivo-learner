@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { ForgotPasswordForm } from "@/components/ForgotPasswordForm";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { readSessionToken } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Forgot password",
@@ -11,10 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/forgot-password" },
 };
 
-export default async function ForgotPasswordPage() {
-  const token = await readSessionToken();
-  if (token) redirect("/home");
-
+export default function ForgotPasswordPage() {
   return (
     <div className="flex flex-1 flex-col">
       <SiteHeader />

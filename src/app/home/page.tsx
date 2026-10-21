@@ -3,8 +3,9 @@ import { AppDownloadCtas } from "@/components/AppDownloadCtas";
 import { CourseMap } from "@/components/academy/CourseMap";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { fetchForroCurriculum } from "@/lib/learning-path";
+import { fetchForroCurriculum } from "@/lib/catalog";
 import { readLearnerAccess } from "@/lib/session";
+import { LearnerProgress, ProgressStatus } from "@/components/academy/LearnerProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function HomePortalPage() {
     <div className="flex flex-1 flex-col bg-[#fafafa]">
       <SiteHeader signedIn={access.kind === "account"} guest={isGuest} />
 
+      <LearnerProgress key={access.scope} scope={access.scope} guest={isGuest}>
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-3xl">
@@ -37,6 +39,7 @@ export default async function HomePortalPage() {
               : "Select a lesson on the path"}
           </p>
         </div>
+        <ProgressStatus />
 
         <section className="mt-8 flex-1">
           {catalogError ? (
@@ -59,6 +62,7 @@ export default async function HomePortalPage() {
           <AppDownloadCtas className="mt-4 justify-center" />
         </section>
       </main>
+      </LearnerProgress>
 
       <SiteFooter />
     </div>

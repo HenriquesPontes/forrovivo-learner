@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRef, useState } from "react";
 import type { PathPhrase, SkillFamily } from "@/lib/learning-path";
+import { useLearnerProgress } from "@/components/academy/LearnerProgress";
+import type { LessonResult } from "@/lib/progress";
 
 type LessonQuizProps = {
+  unitNumber: number;
+  levelNumber: number;
   unitTitle: string;
   levelTitle: string;
   skillFamily?: SkillFamily;
@@ -90,14 +94,13 @@ function buildChoice(
     )
       .slice(0, 3)
       .map((item) => item.english);
-    while (wrong.length < 3) wrong.push(`Option ${wrong.length + 1}`);
     return {
       kind,
       phrase,
       prompt: phrase.forro,
       promptLabel: "What does this mean?",
       answer: phrase.english,
-      options: shuffle([phrase.english, ...wrong.slice(0, 3)]),
+      options: shuffle([...new Set([phrase.english, ...wrong.slice(0, 3)])]),
     };
   }
 
@@ -110,14 +113,13 @@ function buildChoice(
   )
     .slice(0, 3)
     .map((item) => item.forro);
-  while (wrong.length < 3) wrong.push(`Opção ${wrong.length + 1}`);
   return {
     kind,
     phrase,
     prompt: phrase.english,
     promptLabel: "How do you say this in Forro?",
     answer: phrase.forro,
-    options: shuffle([phrase.forro, ...wrong.slice(0, 3)]),
+    options: shuffle([...new Set([phrase.forro, ...wrong.slice(0, 3)])]),
   };
 }
 
@@ -177,7 +179,7 @@ function buildDialogue(
     promptLabel: "Pick the next line in the talk",
     turns,
     answer: phrase.forro,
-    options: shuffle([phrase.forro, ...wrong.slice(0, 3)]),
+    options: shuffle([...new Set([phrase.forro, ...wrong.slice(0, 3)])]),
   };
 }
 
@@ -213,16 +215,18 @@ function buildQuestions(
 }
 
 export function LessonQuiz({
+  unitNumber,
+  levelNumber,
   unitTitle,
   levelTitle,
   skillFamily = "phrase",
   phrases,
   distractors,
 }: LessonQuizProps) {
-  const baseQuestions = useMemo(
-    () => buildQuestions(phrases, distractors, skillFamily),
-    [phrases, distractors, skillFamily],
-  );
+  const progress = useLearnerProgress();
+  // The parent mounts after hydration and keys each lesson, avoiding random
+  // server/client markup differences and effect-driven state resets.
+  const [baseQuestions] = useState(() => buildQuestions(phrases, distractors, skillFamily));
   const [queue, setQueue] = useState<Question[]>(baseQuestions);
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -233,19 +237,22 @@ export function LessonQuiz({
   const [missed, setMissed] = useState<Question[]>([]);
   const [inReprise, setInReprise] = useState(false);
   const [done, setDone] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const result = useRef<LessonResult | null>(null);
 
-  useEffect(() => {
-    setQueue(baseQuestions);
-    setIndex(0);
-    setSelected(null);
-    setAssembled([]);
-    setUsedBankIndexes([]);
-    setRevealed(false);
-    setCorrectCount(0);
-    setMissed([]);
-    setInReprise(false);
-    setDone(false);
-  }, [baseQuestions]);
+  async function persist() {
+    if (saving) return;
+    setSaving(true);
+    setSaveFailed(false);
+    setSaveMessage("Saving your lesson…");
+    result.current ??= { unit: unitNumber, level: levelNumber,
+      score: Math.round(correctCount / baseQuestions.length * 100), completedAt: new Date().toISOString() };
+    try { setSaveMessage(await progress.save(result.current)); }
+    catch (error) { setSaveMessage(error instanceof Error ? error.message : "Could not save. Please try again."); setSaveFailed(true); }
+    finally { setSaving(false); }
+  }
 
   if (baseQuestions.length === 0) {
     return (
@@ -265,19 +272,24 @@ export function LessonQuiz({
           {levelTitle}
         </h2>
         <p className="mt-3 text-base text-[var(--muted)]">
-          You got {correctCount} of {baseQuestions.length} correct
-          {missed.length > 0 ? " after reviewing misses" : ""}.
+          First attempt: {correctCount} of {baseQuestions.length} correct.
+          {inReprise ? " Review complete." : ""}
         </p>
+        <p className="mt-3 text-sm text-[var(--muted)]" role="status">{saveMessage}</p>
+        {saveFailed && <button type="button" disabled={saving} onClick={() => void persist()} className="mt-3 font-medium text-[var(--brand)] underline">Retry save</button>}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/home"
-            className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--brand)] px-6 text-sm font-semibold text-white hover:bg-[var(--brand-ink)]"
+            aria-disabled={saving}
+            className={`inline-flex h-11 items-center justify-center rounded-full bg-[var(--brand)] px-6 text-sm font-semibold text-white hover:bg-[var(--brand-ink)] ${saving ? "pointer-events-none opacity-60" : ""}`}
           >
             Back to course map
           </Link>
           <button
             type="button"
+            disabled={saving}
             onClick={() => {
+              result.current = null;
               setQueue(baseQuestions);
               setIndex(0);
               setSelected(null);
@@ -334,6 +346,7 @@ export function LessonQuiz({
     }
 
     setDone(true);
+    void persist();
   }
 
   return (

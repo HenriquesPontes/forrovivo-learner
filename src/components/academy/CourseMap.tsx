@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import type { CurriculumLevel, CurriculumUnit } from "@/lib/learning-path";
 import { levelQuizSlug } from "@/lib/learning-path";
-import { GUEST_MAX_UNIT } from "@/lib/session";
+import { GUEST_MAX_UNIT } from "@/lib/validation";
+import { useLearnerProgress } from "@/components/academy/LearnerProgress";
+import { completedCount, type LessonResult, type UnitProgress } from "@/lib/progress";
 
 type CourseMapProps = {
   units: CurriculumUnit[];
@@ -14,6 +18,8 @@ type PathNode = {
   level: CurriculumLevel;
   locked: boolean;
   current: boolean;
+  completed: boolean;
+  guestLocked: boolean;
 };
 
 type PathRow = {
@@ -25,21 +31,24 @@ type PathRow = {
 /** Course-map row rhythm: 1 → 2 → 1 → 1 → 2 → … */
 const ROW_SIZES = [1, 2, 1, 1, 2, 1, 1, 1, 2] as const;
 
-function buildNodes(units: CurriculumUnit[], guestMode: boolean): PathNode[] {
+function buildNodes(units: CurriculumUnit[], guestMode: boolean, rows: UnitProgress[], local: LessonResult[]): PathNode[] {
   const flat: PathNode[] = [];
   for (const unit of units) {
-    const locked = guestMode && unit.number > GUEST_MAX_UNIT;
-    for (const level of unit.levels) {
+    const guestLocked = guestMode && unit.number > GUEST_MAX_UNIT;
+    const count = completedCount(unit, rows, local);
+    for (const [position, level] of unit.levels.entries()) {
       flat.push({
         unitNumber: unit.number,
         unitTitle: unit.title,
         level,
-        locked,
+        locked: guestLocked || position > count,
         current: false,
+        completed: position < count,
+        guestLocked,
       });
     }
   }
-  const firstOpen = flat.findIndex((n) => !n.locked);
+  const firstOpen = flat.findIndex((n) => !n.locked && !n.completed);
   if (firstOpen >= 0) flat[firstOpen] = { ...flat[firstOpen], current: true };
   return flat;
 }
@@ -56,7 +65,7 @@ function buildRows(nodes: PathNode[], guestMode: boolean): PathRow[] {
   }
 
   const firstLockedUnit = guestMode
-    ? nodes.find((n) => n.locked)?.unitNumber ?? null
+    ? nodes.find((n) => n.guestLocked)?.unitNumber ?? null
     : null;
 
   let lastUnit = 0;
@@ -137,7 +146,7 @@ function PathTile({ node }: { node: PathNode }) {
       >
         {level.title}
       </span>
-      {locked ? (
+      {node.completed ? <span className="mt-1 text-xs font-semibold text-[var(--brand)]">Completed</span> : locked ? (
         <span className="mt-1 text-xs font-medium text-[#adadad]">Locked</span>
       ) : null}
     </>
@@ -148,7 +157,7 @@ function PathTile({ node }: { node: PathNode }) {
       <div
         id={quizSlug}
         className="flex w-[11.5rem] flex-col items-center px-1 sm:w-[12rem]"
-        title="Create an account to unlock"
+        title={node.guestLocked ? "Create an account to unlock" : "Finish earlier lessons in this unit"}
       >
         {body}
       </div>
@@ -167,6 +176,8 @@ function PathTile({ node }: { node: PathNode }) {
 }
 
 export function CourseMap({ units, guestMode = false }: CourseMapProps) {
+  const progress = useLearnerProgress();
+  if (!progress.ready) return <p className="text-center text-sm" role="status">Loading saved progress…</p>;
   if (units.length === 0) {
     return (
       <p className="text-sm text-[var(--muted)]">
@@ -176,7 +187,7 @@ export function CourseMap({ units, guestMode = false }: CourseMapProps) {
     );
   }
 
-  const rows = buildRows(buildNodes(units, guestMode), guestMode);
+  const rows = buildRows(buildNodes(units, guestMode, progress.rows, progress.results), guestMode);
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-8 pb-8 pt-2 sm:gap-10">

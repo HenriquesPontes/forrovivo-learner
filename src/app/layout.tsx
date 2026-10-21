@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import { Source_Sans_3 } from "next/font/google";
+import localFont from "next/font/local";
+import { cookies } from "next/headers";
+import { AuthLanguageProvider } from "@/components/AuthLanguage";
+import { AUTH_LOCALE_COOKIE, authLocale } from "@/lib/auth-copy";
 import "./globals.css";
+import "./auth.css";
 
-const learnerSans = Source_Sans_3({
+const learnerSans = localFont({
+  src: "./fonts/SourceSans3-Variable.ttf",
   variable: "--font-learner-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: "200 900",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -20,15 +25,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = authLocale((await cookies()).get(AUTH_LOCALE_COOKIE)?.value);
   return (
     <html lang="en" className={`${learnerSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        {children}
+        <AuthLanguageProvider initialLocale={locale}>{children}</AuthLanguageProvider>
       </body>
     </html>
   );

@@ -1,14 +1,15 @@
+import { fetchForroCurriculum } from "@/lib/catalog";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { LessonQuiz } from "@/components/academy/LessonQuiz";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import {
-  fetchForroCurriculum,
   findLevel,
   levelQuizSlug,
 } from "@/lib/learning-path";
 import { GUEST_MAX_UNIT, readLearnerAccess } from "@/lib/session";
+import { LearnerProgress, LessonAccess, ProgressStatus } from "@/components/academy/LearnerProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +22,9 @@ export default async function AcademyLessonPage({ params }: LessonPageProps) {
   if (access.kind === null) redirect("/");
 
   const { unit: unitParam, level: levelParam } = await params;
-  const unitNumber = Number.parseInt(unitParam, 10);
-  const levelNumber = Number.parseInt(levelParam, 10);
-  if (!Number.isFinite(unitNumber) || !Number.isFinite(levelNumber)) {
+  const unitNumber = Number(unitParam);
+  const levelNumber = Number(levelParam);
+  if (!/^[1-9]\d{0,3}$/.test(unitParam) || !/^[1-9]\d{0,3}$/.test(levelParam)) {
     notFound();
   }
 
@@ -52,6 +53,7 @@ export default async function AcademyLessonPage({ params }: LessonPageProps) {
     <div className="flex flex-1 flex-col">
       <SiteHeader signedIn={access.kind === "account"} guest={isGuest} />
 
+      <LearnerProgress key={access.scope} scope={access.scope} guest={isGuest}>
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <p className="mb-6 text-sm text-[var(--muted)]">
           <Link
@@ -67,15 +69,22 @@ export default async function AcademyLessonPage({ params }: LessonPageProps) {
         </p>
 
         <div id={quizHash}>
+          <LessonAccess unit={unit} level={level.number}>
           <LessonQuiz
+            key={`${unit.number}:${level.number}`}
+            unitNumber={unit.number}
+            levelNumber={level.number}
             unitTitle={unit.title}
             levelTitle={level.title}
             skillFamily={level.skillFamily}
             phrases={level.phrases}
             distractors={distractors}
           />
+          </LessonAccess>
         </div>
+        <ProgressStatus />
       </main>
+      </LearnerProgress>
 
       <SiteFooter />
     </div>

@@ -2,214 +2,173 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  APPLE_WEB_CLIENT_ID,
-  APPLE_WEB_REDIRECT_URI,
-  GOOGLE_WEB_CLIENT_ID,
-} from "@/lib/constants";
-
-type SocialSignInProps = {
-  disabled?: boolean;
-  onError?: (message: string) => void;
-  onBusyChange?: (busy: boolean) => void;
-};
+import { APPLE_WEB_CLIENT_ID, APPLE_WEB_REDIRECT_URI, GOOGLE_WEB_CLIENT_ID } from "@/lib/constants";
+import { useAuthLanguage } from "@/components/AuthLanguage";
+import { authErrorText, type AuthLocale } from "@/lib/auth-copy";
 
 declare global {
   interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: {
-            client_id: string;
-            callback: (response: { credential?: string }) => void;
-            auto_select?: boolean;
-            cancel_on_tap_outside?: boolean;
-          }) => void;
-          renderButton: (
-            parent: HTMLElement,
-            options: {
-              type?: string;
-              theme?: string;
-              size?: string;
-              text?: string;
-              shape?: string;
-              width?: number;
-            },
-          ) => void;
-        };
-      };
-    };
-    AppleID?: {
-      auth: {
-        init: (config: {
-          clientId: string;
-          scope: string;
-          redirectURI: string;
-          usePopup: boolean;
-        }) => void;
-        signIn: () => Promise<{
-          authorization?: { id_token?: string };
-        }>;
-      };
-    };
+    google?: { accounts: { id: {
+      initialize: (config: { client_id: string; nonce: string; callback: (response: { credential?: string }) => void; auto_select: boolean }) => void;
+      renderButton: (parent: HTMLElement, options: { theme: string; size: string; text: string; width: number; shape?: string; locale?: string }) => void;
+    } } };
+    AppleID?: { auth: {
+      init: (config: { clientId: string; scope: string; redirectURI: string; usePopup: boolean; nonce: string; state: string }) => void;
+      signIn: () => Promise<{ authorization?: { id_token?: string; state?: string } }>;
+    } };
   }
 }
 
-function loadScript(src: string, id: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const existing = document.getElementById(id);
-    if (existing) {
-      resolve();
-      return;
-    }
+const scripts = new Map<string, Promise<void>>();
+let pendingChallenge: Promise<string> | null = null;
+function challengeNonce() {
+  // Share overlapping mounts (including React Strict Mode) so competing
+  // responses cannot replace the cookie with a nonce different from the SDK's.
+  if (!pendingChallenge) pendingChallenge = (async () => {
+    const response = await fetch("/api/auth/challenge", { cache: "no-store" });
+    const data = await response.json();
+    if (!response.ok || typeof data.nonce !== "string" || !/^[a-f0-9]{64}$/.test(data.nonce)) throw new Error("Could not prepare sign-in.");
+    return data.nonce as string;
+  })().finally(() => { pendingChallenge = null; });
+  return pendingChallenge;
+}
+
+function loadScript(src: string) {
+  const existing = scripts.get(src);
+  if (existing) return existing;
+  const promise = new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
-    script.id = id;
+    const failed = () => {
+      window.clearTimeout(timer);
+      scripts.delete(src);
+      script.remove();
+      reject(new Error("Could not load sign-in."));
+    };
+    const timer = window.setTimeout(failed, 15_000);
     script.src = src;
     script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    script.onload = () => { window.clearTimeout(timer); resolve(); };
+    script.onerror = failed;
     document.head.appendChild(script);
   });
+  scripts.set(src, promise);
+  return promise;
 }
 
-export function SocialSignIn({
-  disabled = false,
-  onError,
-  onBusyChange,
-}: SocialSignInProps) {
-  const router = useRouter();
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-  const [scriptsReady, setScriptsReady] = useState(false);
-  const [busy, setBusy] = useState(false);
+function AppleMark() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M17.05 12.54c.03 3.13 2.75 4.17 2.78 4.18-.02.07-.43 1.49-1.43 2.96-.86 1.27-1.75 2.53-3.16 2.56-1.39.03-1.84-.83-3.43-.83-1.58 0-2.08.8-3.39.86-1.36.05-2.4-1.37-3.27-2.64-1.78-2.6-3.15-7.35-1.32-10.56a5.08 5.08 0 0 1 4.3-2.6c1.34-.03 2.61.91 3.43.91.83 0 2.37-1.13 3.99-.96.68.03 2.59.28 3.82 2.09-.1.06-2.29 1.33-2.32 4.03ZM14.43 4.68c.72-.88 1.2-2.1 1.07-3.31-1.03.04-2.28.69-3.02 1.57-.66.77-1.24 2.01-1.08 3.2 1.15.09 2.31-.59 3.03-1.46Z" /></svg>;
+}
 
-  const finishWithToken = useCallback(
-    async (idToken: string) => {
-      setBusy(true);
-      onBusyChange?.(true);
-      try {
-        const response = await fetch("/api/auth/oauth", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idToken }),
-        });
-        const data: { message?: string } = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          onError?.(data.message || "Apple or Google sign-in failed.");
-          return;
-        }
-        router.replace("/home");
-        router.refresh();
-      } catch {
-        onError?.("Apple or Google sign-in failed.");
-      } finally {
-        setBusy(false);
-        onBusyChange?.(false);
-      }
-    },
-    [onBusyChange, onError, router],
-  );
+function GoogleMark() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.36Z" /><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.24-2.51c-.9.6-2.04.97-3.38.97-2.6 0-4.8-1.76-5.59-4.13H3.07v2.59A10 10 0 0 0 12 22Z" /><path fill="#FBBC05" d="M6.41 13.92a6 6 0 0 1 0-3.84V7.49H3.07a10 10 0 0 0 0 9.02l3.34-2.59Z" /><path fill="#EA4335" d="M12 5.95c1.47 0 2.78.5 3.82 1.5l2.87-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.59C7.2 7.71 9.4 5.95 12 5.95Z" /></svg>;
+}
+
+export function SocialSignIn({ returnTo = "/home", appearance = "default" }: { returnTo?: "/home" | "/account"; appearance?: "default" | "cartoon" }) {
+  const router = useRouter();
+  const { locale, t } = useAuthLanguage();
+  const googleRef = useRef<HTMLDivElement>(null);
+  const nonceRef = useRef("");
+  const processing = useRef(false);
+  const [generation, setGeneration] = useState(0);
+  const [appleReady, setAppleReady] = useState<AuthLocale | null>(null);
+  const [googleReady, setGoogleReady] = useState<AuthLocale | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [errorStatus, setErrorStatus] = useState(0);
+  const googleVisible = googleReady === locale;
+  const enabled = Boolean(APPLE_WEB_CLIENT_ID || GOOGLE_WEB_CLIENT_ID);
+
+  const retry = useCallback(() => {
+    setAppleReady(null);
+    setGoogleReady(null);
+    setError("");
+    setGeneration(value => value + 1);
+  }, []);
+
+  const finish = useCallback(async (idToken: string) => {
+    if (processing.current) return;
+    processing.current = true;
+    setBusy(true);
+    setError("");
+    setErrorStatus(0);
+    try {
+      const response = await fetch("/api/auth/oauth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idToken }) });
+      const data = await response.json().catch(() => null);
+      setErrorStatus(response.status);
+      if (!response.ok || data?.status !== "ok") throw new Error(data?.message || "Sign-in failed. Please try again.");
+      router.replace(returnTo);
+      router.refresh();
+    } catch (failure) {
+      setAppleReady(null);
+      setGoogleReady(null);
+      setError(failure instanceof Error ? failure.message : "Sign-in failed. Please try again.");
+      setGeneration(value => value + 1);
+    } finally { processing.current = false; setBusy(false); }
+  }, [returnTo, router]);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
-        await Promise.all([
-          loadScript("https://accounts.google.com/gsi/client", "google-gsi"),
-          loadScript(
-            "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js",
-            "apple-auth",
-          ),
-        ]);
+        const nonce = await challengeNonce();
         if (cancelled) return;
-
-        window.AppleID?.auth.init({
-          clientId: APPLE_WEB_CLIENT_ID,
-          scope: "name email",
-          redirectURI: APPLE_WEB_REDIRECT_URI,
-          usePopup: true,
-        });
-
-        if (window.google && googleButtonRef.current) {
-          window.google.accounts.id.initialize({
-            client_id: GOOGLE_WEB_CLIENT_ID,
-            callback: (response) => {
-              if (response.credential) {
-                void finishWithToken(response.credential);
-              } else {
-                onError?.("Google did not return an identity token.");
-              }
-            },
-            auto_select: false,
-            cancel_on_tap_outside: true,
-          });
-          googleButtonRef.current.innerHTML = "";
-          window.google.accounts.id.renderButton(googleButtonRef.current, {
-            type: "standard",
-            theme: "outline",
-            size: "large",
-            text: "continue_with",
-            shape: "rectangular",
-            width: 320,
-          });
-        }
-
-        setScriptsReady(true);
-      } catch {
-        if (!cancelled) {
-          onError?.("Could not load Apple or Google sign-in.");
-        }
-      }
+        nonceRef.current = nonce;
+        const tasks: Promise<void>[] = [];
+        if (GOOGLE_WEB_CLIENT_ID) tasks.push((async () => {
+          if (!window.google) await loadScript("https://accounts.google.com/gsi/client");
+          if (cancelled) return;
+          if (!googleRef.current || !window.google) throw new Error("Google sign-in did not load.");
+          window.google.accounts.id.initialize({ client_id: GOOGLE_WEB_CLIENT_ID, nonce, auto_select: false,
+            callback: result => { if (!cancelled && result.credential) void finish(result.credential); } });
+          googleRef.current.replaceChildren();
+          const width = Math.min(400, googleRef.current.parentElement?.clientWidth || 320);
+          window.google.accounts.id.renderButton(googleRef.current, { theme: "outline", size: "large", text: "continue_with", width, shape: appearance === "cartoon" ? "pill" : "rectangular", locale: locale === "pt" ? "pt-PT" : "en" });
+          setGoogleReady(locale);
+        })());
+        if (APPLE_WEB_CLIENT_ID) tasks.push((async () => {
+          if (!window.AppleID) await loadScript("https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js");
+          if (cancelled) return;
+          if (!window.AppleID) throw new Error("Apple sign-in did not load.");
+          window.AppleID.auth.init({ clientId: APPLE_WEB_CLIENT_ID, scope: "name email", redirectURI: APPLE_WEB_REDIRECT_URI,
+            usePopup: true, nonce, state: nonce });
+          setAppleReady(locale);
+        })());
+        const outcomes = await Promise.allSettled(tasks);
+        if (!cancelled && outcomes.some(result => result.status === "rejected")) setError("A sign-in provider could not load. Try again or use email.");
+      } catch { if (!cancelled) setError("Could not load social sign-in. Try again or use email."); }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [finishWithToken, onError]);
+    return () => { cancelled = true; };
+  }, [appearance, enabled, finish, generation, locale]);
 
-  async function onAppleClick() {
-    if (disabled || busy) return;
+  async function signInWithApple() {
+    if (appleReady !== locale || busy || !window.AppleID) return;
+    setBusy(true);
+    setError("");
+    setErrorStatus(0);
     try {
-      const result = await window.AppleID?.auth.signIn();
-      const idToken = result?.authorization?.id_token;
-      if (!idToken) {
-        onError?.("Apple did not return an identity token.");
-        return;
-      }
-      await finishWithToken(idToken);
+      const result = await window.AppleID.auth.signIn();
+      if (!result.authorization?.id_token || result.authorization.state !== nonceRef.current) throw new Error("Apple sign-in was cancelled or expired.");
+      await finish(result.authorization.id_token);
     } catch {
-      onError?.("Apple sign-in was cancelled or failed.");
-    }
+      setError("Apple sign-in was cancelled or failed. Please try again.");
+    } finally { setBusy(false); }
   }
 
-  return (
-    <div className="w-full max-w-sm space-y-3">
-      <button
-        type="button"
-        onClick={onAppleClick}
-        disabled={disabled || busy || !scriptsReady}
-        className="inline-flex h-11 w-full items-center justify-center gap-3 rounded-lg bg-black px-5 text-sm font-semibold text-white hover:bg-black/90 disabled:opacity-60"
-      >
-        <AppleGlyph className="h-5 w-5" />
-        Continue with Apple
-      </button>
-
-      <div
-        ref={googleButtonRef}
-        className={`flex min-h-11 w-full justify-center overflow-hidden rounded-lg ${
-          disabled || busy ? "pointer-events-none opacity-60" : ""
-        }`}
-      />
-
-      {!scriptsReady ? (
-        <p className="text-center text-xs text-[var(--muted)]">Loading sign-in…</p>
-      ) : null}
+  return <section aria-label={t.social} className={appearance === "cartoon" ? "auth-social" : "mt-6 w-full max-w-sm space-y-3"}>
+    <div className="social-divider flex items-center gap-3 py-1 text-xs text-[var(--muted)]"><span className="h-px flex-1 bg-[var(--border)]" />{t.orContinue}<span className="h-px flex-1 bg-[var(--border)]" /></div>
+    <div className="social-provider social-provider-apple">
+      <button type="button" disabled={appleReady !== locale || busy} onClick={() => void signInWithApple()}
+        aria-describedby={!APPLE_WEB_CLIENT_ID ? "apple-signin-unavailable" : undefined}
+        className="social-apple flex h-11 w-full items-center justify-center gap-3 rounded-lg bg-black px-5 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 disabled:cursor-not-allowed disabled:opacity-60"><AppleMark />{t.apple}</button>
+      {!APPLE_WEB_CLIENT_ID && <p id="apple-signin-unavailable" className="mt-1 text-xs text-[var(--muted)]">{t.appleUnavailable}</p>}
     </div>
-  );
-}
-
-function AppleGlyph({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-    </svg>
-  );
+    <div className="social-provider social-provider-google">
+      {!googleVisible && <button type="button" disabled aria-describedby={!GOOGLE_WEB_CLIENT_ID ? "google-signin-unavailable" : undefined}
+        className="social-google-placeholder flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-[var(--border)] bg-white px-5 text-sm font-semibold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"><GoogleMark />{t.google}</button>}
+      <div ref={googleRef} inert={busy} className={`social-google-mounted ${googleVisible ? "" : "hidden"} ${busy ? "pointer-events-none opacity-60" : ""}`} />
+      {!GOOGLE_WEB_CLIENT_ID && <p id="google-signin-unavailable" className="mt-1 text-xs text-[var(--muted)]">{t.googleUnavailable}</p>}
+    </div>
+    {error && <div className="social-error"><p className="text-sm text-red-700" role="alert">{authErrorText(error, errorStatus, locale, "oauth")}</p><button type="button" disabled={busy} onClick={retry} className="mt-2 text-sm font-medium text-[var(--brand)] underline disabled:opacity-60">{t.retrySocial}</button></div>}
+  </section>;
 }
