@@ -13,5 +13,5 @@ export default async function CreateAccountPage() {
   const access = await readLearnerAccess();
   if (access.kind === "account") redirect("/home");
 
-  return <AuthShell mode="register" guest={access.kind === "guest"} />;
+  return <AuthShell mode="register" />;
 }

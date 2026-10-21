@@ -25,7 +25,7 @@ function Arrow() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="auth-arrow"><path d="M5 12h14m-5-5 5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
-export function AuthScreen({ mode, guest = false, className }: { mode: "login" | "register"; guest?: boolean; className: string }) {
+export function AuthScreen({ mode, className }: { mode: "login" | "register"; className: string }) {
   const login = mode === "login";
   const { locale, t } = useAuthLanguage();
   useEffect(() => {
@@ -41,7 +41,6 @@ export function AuthScreen({ mode, guest = false, className }: { mode: "login" |
         <span>Forro<span className="auth-brand-green">Vivo</span></span>
       </a>
       <nav aria-label={t.navigation}>
-        <Link href={guest ? "/home" : "/try"} className="auth-guest-link" aria-label={guest ? t.backLessons : t.tryLesson}><span className="auth-guest-label">{guest ? t.backLessons : t.tryLesson}</span><Arrow /></Link>
         <AuthLanguageSwitch />
       </nav>
     </header>

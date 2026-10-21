@@ -1,5 +1,5 @@
 import { LearnerLanguage } from "@/components/LearnerLanguage";
-import { authLocale, AUTH_LOCALE_COOKIE } from "@/lib/auth-copy";
+import { authLocale } from "@/lib/auth-copy";
 import { LearnerText } from "@/components/LearnerText";
 import Image from "next/image";
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/constants";
@@ -18,9 +18,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePortalPage() {
   const access = await readLearnerAccess();
-  if (access.kind === null) redirect("/");
-
-  const isGuest = access.kind === "guest";
+  if (access.kind !== "account") redirect("/");
   const quickSeen = (await cookies()).get(QUICK_ONBOARDING_COOKIE)?.value === "1";
 
   let units: Awaited<ReturnType<typeof fetchForroCurriculum>> = [];
@@ -32,14 +30,14 @@ export default async function HomePortalPage() {
   }
 
   return (
-    <LearnerLanguage initialLocale={authLocale(access.kind === "account" ? access.account.appLanguage : (await cookies()).get(AUTH_LOCALE_COOKIE)?.value)}><AllSetGate show={!isGuest && !quickSeen}><div className="learner-world learner-home">
-      <SiteHeader signedIn={access.kind === "account"} guest={isGuest} />
+    <LearnerLanguage initialLocale={authLocale(access.account.appLanguage)}><AllSetGate show={!quickSeen}><div className="learner-world learner-home">
+      <SiteHeader signedIn />
 
-      <LearnerProgress key={access.scope} scope={access.scope} guest={isGuest}>
+      <LearnerProgress key={access.scope} scope={access.scope} guest={false}>
       <main id="learner-main" tabIndex={-1} className="learner-dashboard">
         <div className="learner-path-panel" id="learning-path">
           <div className="learner-panel-heading">
-            <div><p className="learner-eyebrow"><LearnerText text={"YOUR COURSE"} /></p><h1><LearnerText text={"Forro"} /></h1><p><LearnerText text={isGuest ? "Guest path · Unit 1 open" : "One lesson at a time. Pick up where you left off."} /></p></div>
+            <div><p className="learner-eyebrow"><LearnerText text={"YOUR COURSE"} /></p><h1><LearnerText text={"Forro"} /></h1><p><LearnerText text={"One lesson at a time. Pick up where you left off."} /></p></div>
             <div className="learner-course-island"><Image src="/images/auth/forrovivo-island.webp" width={170} height={114} alt="Illustrated São Tomé island" /><span className="learner-language-badge"><LearnerText text={"São Tomé & Príncipe"} /></span></div>
           </div>
         <ProgressStatus />
@@ -52,7 +50,7 @@ export default async function HomePortalPage() {
           {catalogError ? (
             <p className="text-center text-sm text-[var(--muted)]"><LearnerText text={"Could not load the Academy catalog. Refresh the page, or continue in the native app."} /></p>
           ) : (
-            <CourseMap units={units} guestMode={isGuest} />
+            <CourseMap units={units} />
           )}
         </section>
 

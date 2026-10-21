@@ -1,6 +1,5 @@
-import { cookies } from "next/headers";
 import { LearnerLanguage } from "@/components/LearnerLanguage";
-import { authLocale, AUTH_LOCALE_COOKIE } from "@/lib/auth-copy";
+import { authLocale } from "@/lib/auth-copy";
 import { LearnerText } from "@/components/LearnerText";
 import { fetchForroCurriculum } from "@/lib/catalog";
 import Link from "next/link";
@@ -12,7 +11,7 @@ import {
   findLevel,
   levelQuizSlug,
 } from "@/lib/learning-path";
-import { GUEST_MAX_UNIT, readLearnerAccess } from "@/lib/session";
+import { readLearnerAccess } from "@/lib/session";
 import { LearnerProgress, LessonAccess, ProgressStatus } from "@/components/academy/LearnerProgress";
 
 export const dynamic = "force-dynamic";
@@ -23,17 +22,13 @@ type LessonPageProps = {
 
 export default async function AcademyLessonPage({ params }: LessonPageProps) {
   const access = await readLearnerAccess();
-  if (access.kind === null) redirect("/");
+  if (access.kind !== "account") redirect("/");
 
   const { unit: unitParam, level: levelParam } = await params;
   const unitNumber = Number(unitParam);
   const levelNumber = Number(levelParam);
   if (!/^[1-9]\d{0,3}$/.test(unitParam) || !/^[1-9]\d{0,3}$/.test(levelParam)) {
     notFound();
-  }
-
-  if (access.kind === "guest" && unitNumber > GUEST_MAX_UNIT) {
-    redirect("/home");
   }
 
   let units: Awaited<ReturnType<typeof fetchForroCurriculum>> = [];
@@ -51,13 +46,12 @@ export default async function AcademyLessonPage({ params }: LessonPageProps) {
     item.levels.flatMap((entry) => entry.phrases),
   );
   const quizHash = levelQuizSlug(level.title);
-  const isGuest = access.kind === "guest";
 
   return (
-    <LearnerLanguage initialLocale={authLocale(access.kind === "account" ? access.account.appLanguage : (await cookies()).get(AUTH_LOCALE_COOKIE)?.value)}><div className="learner-world learner-lesson">
-      <SiteHeader signedIn={access.kind === "account"} guest={isGuest} />
+    <LearnerLanguage initialLocale={authLocale(access.account.appLanguage)}><div className="learner-world learner-lesson">
+      <SiteHeader signedIn />
 
-      <LearnerProgress key={access.scope} scope={access.scope} guest={isGuest}>
+      <LearnerProgress key={access.scope} scope={access.scope} guest={false}>
       <main id="learner-main" tabIndex={-1} className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <p className="mb-6 text-sm text-[var(--muted)]">
           <Link

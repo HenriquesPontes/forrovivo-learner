@@ -161,18 +161,7 @@ export function SiteHeader({ signedIn = false, guest = false }: SiteHeaderProps)
               </Link>
               <LogoutButton label="Logout" />
             </>
-          ) : (
-            <>
-              <Link
-                href="/try"
-                className={`${outlineBtn} border-[#c45c5c] text-[#b43b3b] hover:bg-[#fdf4f4]`}
-              >
-                <LessonsIcon />
-                <span><LearnerText text={"Try lessons"} /></span>
-              </Link>
-
-            </>
-          )}
+          ) : null}
         </nav>
       </div>
     </header>

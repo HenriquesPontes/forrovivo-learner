@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
-import { GUEST_COOKIE, guestCookieOptions } from "@/lib/auth";
+import { GUEST_COOKIE } from "@/lib/auth";
 
-/** Enter Academy as guest (unit 1 only). Used by “Try lessons”. */
+/** Old guest entry. Learning now requires a signed-in account. */
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const dest = new URL("/home", url.origin);
-  const response = NextResponse.redirect(dest);
-  response.cookies.set(GUEST_COOKIE, "1", guestCookieOptions());
+  const response = NextResponse.redirect(new URL("/", request.url));
+  response.cookies.set(GUEST_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
   return response;
 }

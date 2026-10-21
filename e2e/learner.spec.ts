@@ -28,11 +28,12 @@ async function finishFirstLesson(page: Page) {
 
 test.beforeEach(async ({ request }) => { await request.post("http://127.0.0.1:4319/_test/reset"); });
 
-test("a new account gets a short web introduction once, and a guest does not", async ({ page }) => {
+test("a new account gets a short web introduction once", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/try");
-  await expect(page.getByRole("heading", { name: "Forro", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "How much Forro do you know?", exact: true })).toHaveCount(0);
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("heading", { name: "Log in", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Try a lesson" })).toHaveCount(0);
 
   await page.goto("/create-account");
   await page.getByLabel("Email", { exact: true }).fill("quick@example.test");
@@ -71,32 +72,27 @@ test("a new account gets a short web introduction once, and a guest does not", a
   await expect(page.getByRole("heading", { name: "How much Forro do you know?", exact: true })).toHaveCount(0);
 });
 
-test("guest lesson survives navigation and refresh; later units and skipped lessons stay locked", async ({ page }) => {
+test("a signed-in lesson survives navigation and refresh; a later lesson stays locked", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
-  await page.goto("/try");
+  await register(page);
   await finishFirstLesson(page);
-  await expect(page.getByText("Lesson saved on this browser.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Lesson saved to your account.", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Back to course map", exact: true }).click();
   await expect(page.getByText("Completed", { exact: true })).toHaveCount(1);
   await page.reload();
   await expect(page.getByText("Completed", { exact: true })).toHaveCount(1);
   await page.goto("/academy/2/1");
-  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole("heading", { name: "Finish the earlier lessons first", exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });
 
-test("guest claim persists to the account; logout and another account cannot inherit it", async ({ page }) => {
-  await page.goto("/try");
-  await finishFirstLesson(page);
-  await expect(page.getByText("Lesson saved on this browser.", { exact: true })).toBeVisible();
+test("one account's completed lesson does not appear on another account", async ({ page }) => {
   await register(page);
-  await page.getByRole("button", { name: "Save guest lessons to this account", exact: true }).click();
-  await expect(page.getByText("Completed", { exact: true })).toHaveCount(1);
-  await expect(page.getByRole("button", { name: "Save guest lessons to this account", exact: true })).toHaveCount(0);
-  await page.reload();
+  await finishFirstLesson(page);
+  await page.getByRole("link", { name: "Back to course map", exact: true }).click();
   await expect(page.getByText("Completed", { exact: true })).toHaveCount(1);
   await page.getByRole("button", { name: "Log out", exact: true }).click();
   await expect(page).toHaveURL("/");
