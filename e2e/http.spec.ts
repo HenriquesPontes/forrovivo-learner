@@ -60,7 +60,7 @@ test("HTTP: invalid-cookie access clears safely; recovery remains reachable with
   expect(portuguese.status()).toBe(200);
   const portugueseHtml = await portuguese.text();
   expect(portugueseHtml).toContain("Palavra-passe");
-  expect(portugueseHtml).toContain("Continuar com Apple");
+  expect(portugueseHtml).toContain("Esqueceste-te da palavra-passe?");
   expect(portugueseHtml).toContain('lang="pt-PT"');
   const portugueseRegistration = await call(request, "GET", "/create-account", undefined, { Cookie: "fv_learner_locale=pt" });
   expect(portugueseRegistration.status()).toBe(200);
