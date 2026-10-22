@@ -40,7 +40,7 @@ jobs:
         run: npm run test:e2e
       - name: Preserve browser results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: learner-browser-results
           path: test-results/
