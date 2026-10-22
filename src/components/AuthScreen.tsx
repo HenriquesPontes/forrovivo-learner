@@ -52,7 +52,6 @@ export function AuthScreen({ className }: { className: string }) {
           <p className="auth-welcome">{t.welcome}</p>
           <p className="auth-intro">{t.intro}</p>
           <p className="auth-intro">{t.socialIntro}</p>
-          <LeafSprig className="auth-card-leaves" />
         </section>
 
         <div id="auth-form" tabIndex={-1}><SocialSignIn appearance="cartoon" /></div>
