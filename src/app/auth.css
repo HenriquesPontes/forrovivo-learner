@@ -296,8 +296,8 @@
 .onboard-path-badge { margin-top: 12px; padding: 4px 12px; border-radius: 20px; background: #eaf2dc; color: #57733e; font-size: 11px; font-weight: 850; }
 .onboard-saved { color: #368514; margin: 12px 0 0; font-size: 14px; font-weight: 750; }
 
-/* Side-by-side providers with one visible button surface each. */
-.auth-social { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+/* Keep the existing mobile grid rule; do not force desktop columns on phones. */
+.auth-social { align-items: start; }
 .auth-social .social-google-mounted { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 2px 0; border: 0; border-radius: 24px; background: transparent; box-shadow: 0 4px 0 #d1dec1; }
 .auth-social .social-google-mounted.hidden { display: none; }
 .auth-social .social-google-mounted:focus-within { outline: 3px solid #a7c78c; outline-offset: 4px; }
