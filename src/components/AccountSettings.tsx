@@ -17,7 +17,6 @@ export function AccountSettings({ account, scope }: { account: Account; scope: s
   const { tr } = useLearnerCopy();
   const [name, setName] = useState(account.displayName);
   const [language, setLanguage] = useState(account.appLanguage);
-  const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -27,7 +26,7 @@ export function AccountSettings({ account, scope }: { account: Account; scope: s
     setMessage("");
     try {
       const response = await fetch("/api/account", { method, headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(method === "PATCH" ? { scope, displayName: name, appLanguage: language } : { scope, confirmation, password }) });
+        body: JSON.stringify(method === "PATCH" ? { scope, displayName: name, appLanguage: language } : { scope, confirmation }) });
       const data = await response.json().catch(() => null);
       if (!response.ok || data?.status !== "ok") throw new Error(data?.message || "Could not update your account.");
       if (method === "DELETE") {
@@ -37,7 +36,7 @@ export function AccountSettings({ account, scope }: { account: Account; scope: s
       } else { setLocale(data.appLanguage === "pt" || data.appLanguage === "en" ? data.appLanguage : language === "pt" ? "pt" : "en"); setMessage("Profile saved."); }
       router.refresh();
     } catch (error) { setMessage(error instanceof Error ? error.message : "Please try again."); }
-    finally { setBusy(false); setPassword(""); }
+    finally { setBusy(false); }
   }
 
   return <div className="profile-settings-grid">
@@ -56,7 +55,7 @@ export function AccountSettings({ account, scope }: { account: Account; scope: s
     <form id="account-management" className="profile-danger-card space-y-4" onSubmit={event => { event.preventDefault(); void submit("DELETE"); }}>
       <div className="profile-card-heading"><span className="profile-card-symbol" aria-hidden="true">!</span><div><h2 className="text-xl font-semibold"><LearnerText text={"Delete account"} /></h2><p><LearnerText text={"Manage your account carefully."} /></p></div></div>
       <p className="text-sm text-[var(--muted)]"><LearnerText text={"This permanently removes this account and its cloud data, and signs out its devices. This cannot be undone."} /></p>
-      {account.provider === "email" ? <label className="block"><LearnerText text={"Current password"} /><input required type="password" autoComplete="current-password" maxLength={128} value={password} onChange={event => setPassword(event.target.value)} className="mt-2 block h-11 w-full rounded-lg border border-[var(--border)] px-3" /></label> :
+      {account.provider === "email" ? null :
         <p className="text-sm"><LearnerText text={"Sign-in must be from the last five minutes. "} /><Link href="/reauthenticate" className="text-[var(--brand)] underline"><LearnerText text={"Sign in again"} /></Link></p>}
       <label className="block"><LearnerText text={"Type DELETE to confirm"} /><input required autoComplete="off" value={confirmation} onChange={event => setConfirmation(event.target.value)} className="mt-2 block h-11 w-full rounded-lg border border-[var(--border)] px-3" /></label>
       <button disabled={busy || confirmation !== "DELETE"} className="rounded-lg bg-red-700 px-5 py-3 font-semibold text-white disabled:opacity-50"><LearnerText text={"Delete my account"} /></button>

@@ -1,4 +1,4 @@
-import { EMPTY_PROGRESS, parseLocalProgress, type LocalProgress } from "@/lib/progress";
+import { parseLocalProgress, type LocalProgress } from "@/lib/progress";
 
 export const PROGRESS_EVENT = "fv-progress-changed";
 export function progressKey(scope: string) { return `fv_learner_forro_v1:${scope}`; }
@@ -33,4 +33,3 @@ export function subscribeProgress(listener: () => void) {
 }
 
 export function serverProgressSnapshot(): string | null { return null; }
-export function emptyProgress() { return { ...EMPTY_PROGRESS, results: [], units: [] }; }

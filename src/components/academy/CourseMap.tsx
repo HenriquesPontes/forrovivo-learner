@@ -210,9 +210,9 @@ export function CourseMap({ units, guestMode = false }: CourseMapProps) {
             {row.showLockedCta ? (
               <p className="mt-4 text-center text-sm text-[var(--muted)]">
                 <Link
-                  href="/create-account"
+                  href="/"
                   className="font-medium text-[var(--brand)] underline-offset-4 hover:underline"
-                ><LearnerText text={"Create account to unlock"} /></Link>
+                ><LearnerText text={"Sign in to unlock"} /></Link>
               </p>
             ) : null}
           </div>

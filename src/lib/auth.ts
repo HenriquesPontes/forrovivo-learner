@@ -56,16 +56,6 @@ export function sessionCookieOptions(expiresAt: string) {
   };
 }
 
-export function guestCookieOptions() {
-  return {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  };
-}
-
 export function clearGuestCookie(response: {
   cookies: { set: (name: string, value: string, options: object) => void };
 }) {

@@ -11,7 +11,7 @@
 .learner-brand > div > div:last-child { font-size: 9px; letter-spacing: 2px; color: #7a885f; }
 .learner-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 12px; }
 .learner-nav a, .learner-nav button { font-family: inherit; font-weight: 800; font-size: 12px; }
-.learner-nav a[href="/home"], .learner-nav a[href="/create-account"], .learner-nav button { border: 2px solid #a5b58d; border-radius: 13px; min-height: 40px; background: #f1f6e6; color: #36522b; box-shadow: 0 3px 0 #d4dfc2; }
+.learner-nav a[href="/home"], .learner-nav button { border: 2px solid #a5b58d; border-radius: 13px; min-height: 40px; background: #f1f6e6; color: #36522b; box-shadow: 0 3px 0 #d4dfc2; }
 .learner-nav a[href="/account"] { padding: 10px; }
 .learner-nav > a[href="https://forrovivo.com"] { display: none; }
 .learner-dashboard { width: 100%; max-width: 1200px; margin: auto; padding: 32px 28px 64px; }
@@ -223,8 +223,6 @@
 @media (max-width: 600px) { .learner-mobile-signout { display: block; margin-top: 14px; padding-top: 12px; border-top: 1px solid #e1e7d6; } }
 @media (max-width: 600px) {
  .learner-nav > a[href="/home"] { display: none; }
- .learner-nav > a[href="/create-account"] { padding-inline: 10px; min-width: 42px; justify-content: center; }
- .learner-nav > a[href="/create-account"] span { display: none; }
 }
 .learner-nav button.learner-logout-icon,
 .learner-home .learner-nav button.learner-logout-icon {

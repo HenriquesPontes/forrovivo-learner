@@ -133,10 +133,10 @@ it("a failed Apple SDK does not block Google, and retry can recover Apple", asyn
   expect([...node.querySelectorAll("button")].find(button => button.textContent === "Continue with Apple")?.disabled).toBe(false);
 });
 
-it.each(["login", "register"] as const)("%s retains the cartoon shell with only social sign-in in both languages", async mode => {
+it("login retains the cartoon shell with only social sign-in in both languages", async () => {
   setup.google = "fixture-google-web"; setup.apple = "com.example.fixture.web";
   googleSdk(); appleSdk();
-  await act(async () => { root.render(<AuthLanguageProvider initialLocale="en"><AuthScreen mode={mode} className="test-font" /></AuthLanguageProvider>); });
+  await act(async () => { root.render(<AuthLanguageProvider initialLocale="en"><AuthScreen className="test-font" /></AuthLanguageProvider>); });
   expect(node.querySelector(".auth-card")).toBeTruthy();
   expect(node.querySelector(".auth-sign")).toBeTruthy();
   expect(node.querySelector("input, form")).toBeNull();
@@ -145,7 +145,11 @@ it.each(["login", "register"] as const)("%s retains the cartoon shell with only 
   expect(node.textContent).toContain("Continue with Google");
   expect(node.textContent).not.toContain("Or continue with");
   await click("PT");
-  expect(node.querySelector("h1")?.textContent).toBe(mode === "login" ? "Entrar" : "Criar conta");
+  expect(node.querySelector("h1")?.textContent).toBe("Entrar");
+  expect(node.textContent).not.toContain("Ainda não tens conta");
+  expect(node.textContent).not.toContain("Criar conta");
+  expect(node.querySelector('a[href="/create-account"]')).toBeNull();
+  expect(node.querySelector('input[type="password"]')).toBeNull();
   expect(node.textContent).toContain("Continua com Apple ou Google.");
   expect(node.textContent).toContain("Todos os direitos reservados.");
   expect(document.documentElement.lang).toBe("pt-PT");
@@ -160,5 +164,6 @@ it("uses the registered secure site instead of starting an Apple popup on a diff
   await mount();
   expect(appleInit).not.toHaveBeenCalled();
   expect(node.querySelector('a[href="https://learn.forrovivo.com/"]')?.textContent).toContain("Continue with Apple");
-  expect(node.textContent).toContain("Opens the secure site for Apple sign-in.");
+  expect(node.textContent).not.toContain("Opens the secure site for Apple sign-in.");
+  expect(node.textContent).not.toContain("Abre o site seguro para entrar com Apple.");
 });

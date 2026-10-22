@@ -10,7 +10,7 @@ const sizes = [
 ];
 
 for (const locale of ["en", "pt"] as const) {
-  for (const route of ["/", "/create-account"]) {
+  for (const route of ["/"]) {
     for (const [width, height] of sizes) {
       test(`${route} ${locale} ${width}x${height}: controls remain accessible`, async ({ page, context }, testInfo) => {
         await context.addCookies([{ name: "fv_learner_locale", value: locale, url: "https://localhost:4318" }]);

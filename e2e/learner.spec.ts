@@ -122,7 +122,7 @@ test("invalid cookie cannot unlock accounts and is cleared without a redirect lo
   await expect(page.locator('script[src*="accounts.google.com"], script[src*="appleid.cdn-apple.com"]')).toHaveCount(0);
 });
 
-test("profile edit, private export and password-confirmed deletion work with the backend contract", async ({ page }) => {
+test("profile edit, private export and confirmed deletion work with the backend contract", async ({ page }) => {
   await register(page);
   await page.goto("/account");
   await page.getByLabel("Name", { exact: true }).fill("Updated fixture learner");
@@ -133,7 +133,6 @@ test("profile edit, private export and password-confirmed deletion work with the
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download account and study data", exact: true }).click();
   expect((await download).suggestedFilename()).toBe("forrovivo-learning-data.json");
-  await page.getByLabel("Current password", { exact: true }).fill("fixture-password");
   await page.getByLabel("Type DELETE to confirm", { exact: true }).fill("DELETE");
   await page.getByRole("button", { name: "Delete my account", exact: true }).click();
   await expect(page).toHaveURL("/");

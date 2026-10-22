@@ -1,9 +1,8 @@
 import { AUTH_LOCALE_COOKIE } from "@/lib/auth-copy";
 import { requireAccount } from "@/lib/session";
 import { backend, bearer, isAccount } from "@/lib/backend";
-import { clearSessionCookies, storageScope } from "@/lib/auth";
+import { clearSessionCookies } from "@/lib/auth";
 import { json, readJson, RequestError, routeError } from "@/lib/http";
-import { validatePassword } from "@/lib/validation";
 
 export async function PATCH(request: Request) {
   try {
@@ -31,19 +30,10 @@ export async function DELETE(request: Request) {
     if (body.scope !== scope) throw new RequestError(409, "Your account changed. Reload this page before deleting.");
     if (body.confirmation !== "DELETE") throw new RequestError(400, "Type DELETE to confirm account deletion.");
     if (!context) throw new RequestError(409, "Sign in again before deleting your account.");
-    let authorizedToken = token;
-    if (account.provider === "email") {
-      const password = typeof body.password === "string" ? validatePassword(body.password) : null;
-      if (!password || !account.email) throw new RequestError(400, "Enter your password to delete this account.");
-      const proof = await backend("/app/v1/auth/login", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: account.email, password }) });
-      if (proof.accountKey !== `email:${account.email.toLowerCase()}` || await storageScope(String(proof.accountKey)) !== context.scope || typeof proof.token !== "string" ||
-        !/^fv_learn_[a-f0-9]{48}$/.test(proof.token)) throw new RequestError(401, "Could not confirm your account. Sign in again.");
-      authorizedToken = proof.token;
-    } else if (Date.now() - context.authenticatedAt > 300_000) {
+    if (account.provider !== "email" && Date.now() - context.authenticatedAt > 300_000) {
       throw new RequestError(409, "Sign in again before deleting your account.");
     }
-    const result = await backend("/app/v1/account", { method: "DELETE", headers: bearer(authorizedToken) });
+    const result = await backend("/app/v1/account", { method: "DELETE", headers: bearer(token) });
     if (result.deleted !== true) throw new RequestError(502, "The service did not confirm account deletion.");
     return clearSessionCookies(json({ status: "ok", deleted: true }), true);
   } catch (error) { return routeError(error); }

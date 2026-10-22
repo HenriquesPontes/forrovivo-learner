@@ -145,7 +145,7 @@ export function SiteHeader({ signedIn = false, guest = false }: SiteHeaderProps)
           ) : guest ? (
             <>
               <Link
-                href="/create-account"
+                href="/"
                 aria-label="Save Your Progress"
                 className="inline-flex h-9 items-center gap-2 rounded-md bg-[#c45c5c] px-3 text-sm font-medium text-white hover:bg-[#b43b3b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c45c5c]/35"
               >

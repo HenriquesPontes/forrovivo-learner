@@ -61,10 +61,11 @@ test("HTTP: invalid-cookie access clears safely; recovery remains reachable with
   const portugueseHtml = await portuguese.text();
   expect(portugueseHtml).not.toContain('type="password"');
   expect(portugueseHtml).toContain("Continua com Apple ou Google.");
+  expect(portugueseHtml).not.toContain("Ainda não tens conta");
+  expect(portugueseHtml).not.toContain('href="/create-account"');
   expect(portugueseHtml).toContain('lang="pt-PT"');
   const portugueseRegistration = await call(request, "GET", "/create-account", undefined, { Cookie: "fv_learner_locale=pt" });
-  expect(portugueseRegistration.status()).toBe(200);
-  expect(await portugueseRegistration.text()).toContain("Criar conta");
+  await expectPageRedirect(portugueseRegistration, "/");
   jar(request).set("fv_learner_session", "arbitrary");
   const reset = await call(request, "GET", `/reset-password?token=fv_reset_${"b".repeat(48)}`);
   await expectPageRedirect(reset, "/");
@@ -109,7 +110,7 @@ test("HTTP: paused saves are retryable and another account cannot receive a stal
   expect((await (await call(request, "GET", "/api/progress")).json()).units).toEqual([]);
 });
 
-test("HTTP: profile and export use the current identity; deletion requires password and confirmation", async ({ request }) => {
+test("HTTP: profile and export use the current identity; deletion requires confirmation", async ({ request }) => {
   await register(request);
   expect((await call(request, "PATCH", "/api/account", { displayName: "Changed fixture", appLanguage: "pt" })).status()).toBe(200);
   const page = await call(request, "GET", "/account");
@@ -122,8 +123,7 @@ test("HTTP: profile and export use the current identity; deletion requires passw
   expect(data.account.displayName).toBe("Changed fixture");
   expect(Object.keys(data.progress)).toHaveLength(6);
   expect(JSON.stringify(data)).not.toContain("fv_learn_");
-  expect((await call(request, "DELETE", "/api/account", { confirmation: "DELETE" })).status()).toBe(400);
-  expect((await call(request, "DELETE", "/api/account", { confirmation: "DELETE", password: "fixture-password" })).status()).toBe(200);
+  expect((await call(request, "DELETE", "/api/account", { confirmation: "DELETE" })).status()).toBe(200);
   expect(jar(request).has("fv_learner_session")).toBe(false);
   await expectPageRedirect(await call(request, "GET", "/account"), "/");
 });

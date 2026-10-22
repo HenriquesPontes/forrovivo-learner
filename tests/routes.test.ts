@@ -156,27 +156,27 @@ describe("account lifecycle", () => {
     expect(response.status).toBe(200);
     expect(JSON.parse(String(fetcher.mock.calls[1][1]?.body))).toMatchObject({ email: account.email, studyLanguage: "lungie" });
   });
-  it("requires confirmation and password reauthentication before erasing an email account", async () => {
+  it("requires confirmation before erasing an email account and does not ask for a password", async () => {
     await signIn();
     fetcher.mockImplementation(async () => Response.json({ status: "ok", account }));
     expect((await deleteAccount(request({ confirmation: "no" }))).status).toBe(400);
-    expect((await deleteAccount(request({ confirmation: "DELETE" }))).status).toBe(400);
     expect(fetcher.mock.calls.some(call => call[1]?.method === "DELETE")).toBe(false);
     fetcher.mockReset();
     fetcher.mockResolvedValueOnce(Response.json({ status: "ok", account }));
-    fetcher.mockResolvedValueOnce(Response.json(success()));
+    fetcher.mockResolvedValueOnce(Response.json({ status: "ok", deleted: true }));
+    const response = await deleteAccount(request({ confirmation: "DELETE" }));
+    expect(response.status).toBe(200);
+    expect(fetcher.mock.calls.some(call => String(call[0]).includes("/auth/login"))).toBe(false);
+    expect(fetcher.mock.calls[1][1]?.method).toBe("DELETE");
+    expect(response.cookies.get(SESSION_COOKIE)?.value).toBe("");
+  });
+  it("does not send a password when deleting an email account", async () => {
+    await signIn();
+    fetcher.mockResolvedValueOnce(Response.json({ status: "ok", account }));
     fetcher.mockResolvedValueOnce(Response.json({ status: "ok", deleted: true }));
     const response = await deleteAccount(request({ confirmation: "DELETE", password: "test-password" }));
     expect(response.status).toBe(200);
-    expect(fetcher.mock.calls[2][1]?.method).toBe("DELETE");
-    expect(response.cookies.get(SESSION_COOKIE)?.value).toBe("");
-  });
-  it("cannot use a mutable contact address to delete a different password account", async () => {
-    await signIn();
-    fetcher.mockResolvedValueOnce(Response.json({ status: "ok", account: { ...account, email: "different@example.test" } }));
-    fetcher.mockResolvedValueOnce(Response.json({ ...success(), accountKey: "email:different@example.test" }));
-    expect((await deleteAccount(request({ confirmation: "DELETE", password: "test-password" }))).status).toBe(401);
-    expect(fetcher.mock.calls.some(call => call[1]?.method === "DELETE")).toBe(false);
+    expect(fetcher.mock.calls.some(call => call[1]?.method === "POST")).toBe(false);
   });
   it("requires signed recent authentication for social deletion and does not clear cookies on failed erase", async () => {
     state.jar.set(SESSION_COOKIE, token);
@@ -209,7 +209,7 @@ describe("account lifecycle", () => {
     fetcher.mockImplementation(async () => Response.json({ status: "ok", account }));
     const oldScope = "d".repeat(64);
     expect((await patchAccount(request({ scope: oldScope, displayName: "Wrong account", appLanguage: "en" }))).status).toBe(409);
-    expect((await deleteAccount(request({ scope: oldScope, confirmation: "DELETE", password: "test-password" }))).status).toBe(409);
+    expect((await deleteAccount(request({ scope: oldScope, confirmation: "DELETE" }))).status).toBe(409);
     expect((await exportAccount(new Request(`${origin}/api/account/export?scope=${oldScope}`))).status).toBe(409);
     expect(fetcher.mock.calls.some(call => ["PUT", "DELETE", "POST"].includes(call[1]?.method ?? ""))).toBe(false);
   });

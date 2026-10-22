@@ -17,12 +17,6 @@ export async function readSessionToken(): Promise<string | null> {
   return value || null;
 }
 
-export async function readGuestSession(): Promise<boolean> {
-  const jar = await cookies();
-  const value = jar.get(GUEST_COOKIE)?.value?.trim();
-  return value === "1";
-}
-
 export async function requireAccount({ allowLegacy = false }: { allowLegacy?: boolean } = {}) {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value?.trim();

@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { AuthLanguageSwitch, useAuthLanguage } from "@/components/AuthLanguage";
 import Image from "next/image";
-import Link from "next/link";
 import { SocialSignIn } from "@/components/SocialSignIn";
 
 
@@ -20,19 +19,14 @@ function LeafSprig({ className }: { className: string }) {
   </svg>;
 }
 
-function Arrow() {
-  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="auth-arrow"><path d="M5 12h14m-5-5 5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
-
-export function AuthScreen({ mode, className }: { mode: "login" | "register"; className: string }) {
-  const login = mode === "login";
+export function AuthScreen({ className }: { className: string }) {
   const { locale, t } = useAuthLanguage();
   useEffect(() => {
     const previous = document.documentElement.lang;
     document.documentElement.lang = locale === "pt" ? "pt-PT" : "en";
     return () => { document.documentElement.lang = previous; };
   }, [locale]);
-  return <div className={`auth-world ${className}`} data-auth-mode={mode} lang={locale === "pt" ? "pt-PT" : "en"}>
+  return <div className={`auth-world ${className}`} data-auth-mode="login" lang={locale === "pt" ? "pt-PT" : "en"}>
     <a href="#auth-form" className="auth-skip">{t.skip}</a>
     <header className="auth-header">
       <a href="/home" className="auth-brand" aria-label="ForroVivo Learner">
@@ -49,20 +43,19 @@ export function AuthScreen({ mode, className }: { mode: "login" | "register"; cl
         <div className="auth-sign-wrap">
           <LeafSprig className="auth-sign-leaves auth-sign-leaves-left" />
           <LeafSprig className="auth-sign-leaves auth-sign-leaves-right" />
-          <div className="auth-sign"><span className="auth-sign-pin" aria-hidden="true" /><h1>{login ? t.login : t.register}</h1><span className="auth-sign-pin" aria-hidden="true" /></div>
+          <div className="auth-sign"><span className="auth-sign-pin" aria-hidden="true" /><h1>{t.login}</h1><span className="auth-sign-pin" aria-hidden="true" /></div>
         </div>
 
         <section className="auth-card" aria-label={t.social}>
           <span className="auth-card-corner auth-card-corner-tl" aria-hidden="true" />
           <span className="auth-card-corner auth-card-corner-br" aria-hidden="true" />
-          <p className="auth-welcome">{login ? t.welcome : t.registerWelcome}</p>
-          <p className="auth-intro">{login ? t.intro : t.registerIntro}</p>
+          <p className="auth-welcome">{t.welcome}</p>
+          <p className="auth-intro">{t.intro}</p>
           <p className="auth-intro">{t.socialIntro}</p>
           <LeafSprig className="auth-card-leaves" />
         </section>
 
         <div id="auth-form" tabIndex={-1}><SocialSignIn appearance="cartoon" /></div>
-        <p className="auth-switch">{login ? t.newHere : t.alreadyHere} <Link href={login ? "/create-account" : "/"}>{login ? t.register : t.login}<Arrow /></Link></p>
       </div>
     </main>
     <footer className="auth-footer">
