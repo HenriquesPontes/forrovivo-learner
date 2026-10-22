@@ -1,0 +1,51 @@
+{
+  "checkedAt": "2026-10-22T10:00:00.522910+00:00",
+  "previousProductionCommit": "77e2a5826493680f042344775aaafbc0cd7b8412",
+  "localReviewedCommit": "e1639b1",
+  "sourceTree": "75dcdb6eee85fbee657d20165f57db9952f3d754",
+  "productionCommit": "ba7143614e0c0c1fb95f9ca3ab0e42ab137fc86f",
+  "deployment": "GWvpYX3DmF3jWK9MKP5FoUtVHCkr",
+  "domain": "https://learn.forrovivo.com",
+  "githubStatus": "Vercel success",
+  "vercelDashboard": "Ready; Production; Current Domains includes learn.forrovivo.com",
+  "publicationMethod": "GitHub connected tools; exact reviewed local committed tree recreated remotely; leased fast-forward main update",
+  "localGitMetadataUpdated": false,
+  "reason": "Local .git writes remain restricted; remote/local commit SHAs differ but the reviewed source tree is identical",
+  "checksBeforeRelease": [
+    "66 regression/DOM tests pass",
+    "zero-warning lint",
+    "typecheck",
+    "fresh production build passes"
+  ],
+  "productionSchema": "migration 0020 applied and verified before Learner publication",
+  "realMailboxAcceptance": false,
+  "realOAuthAcceptance": false,
+  "designChanged": false,
+  "postReleaseChecks": {
+    "missingVerificationLink": "page loads; confirmation disabled; new-request link present",
+    "syntheticInvalidToken": "valid-format all-zero token plus synthetic password rejected with invalid/expired message; no activation",
+    "existingSession": "existing authenticated browser still opens /home and reaches Progress saved to your account.",
+    "learnerHealth": {
+      "ok": true,
+      "catalogStatus": 200,
+      "accountStatus": 200,
+      "checkedAt": "2026-10-22T10:21:13.598Z"
+    }
+  },
+  "responsiveFollowUp": {
+    "observed": "Native Safari at 390x844 clipped Google button because a later global two-column rule overrode the existing <=480px mobile grid",
+    "fix": "Remove only duplicate grid-template-columns override; retain existing responsive breakpoint, desktop columns, colors and components",
+    "commit": "eb5829b67f364d5dfdd50316515a5b586c105ecb",
+    "sourceTree": "b38699ca7b9d524d3ad4bc63742ab44abbd92302",
+    "validation": "66 tests; zero-warning lint; build; typecheck pass",
+    "deployedAcceptance": [
+      "390x844 login EN: actual Google/Apple buttons fit after reload",
+      "320x568 login PT: full controls, both providers and footer reachable by vertical scroll",
+      "320x568 registration PT: fields and providers exposed; no account submitted",
+      "481x800 registration EN: screenshot shows both providers side by side and full form/footer"
+    ],
+    "deployment": "3P9eZM3xtbYWaMbut8zeUQucEJSa",
+    "vercelStatus": "success",
+    "scope": "Native Safari spot checks with actual SDK rendering, not the entire 104-case automated matrix or physical iOS keyboard acceptance"
+  }
+}
