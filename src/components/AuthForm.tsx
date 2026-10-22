@@ -49,7 +49,7 @@ export function AuthForm({ mode, returnTo = "/home", appearance = "default", sho
       }
       if (data.pending) {
         setStatus("idle");
-        setMessage(data.message || "This email may already have an account. Try logging in or request a password reset.");
+        setMessage(data.message || "Check your email to finish registration. If you already have an account, sign in or reset your password.");
         return;
       }
       router.replace(returnTo);

@@ -91,3 +91,7 @@ Login and registration support EN/PT with a saved browser preference. Dashboard 
 Current UI changes and the pending screen-size acceptance matrix are recorded in the [22 October documentation follow-up](docs/AUTH_UI_2026-10-21.md#documentation-follow-up--22-october-2026). The earlier single-viewport result does not certify the latest registration spacing or all screen sizes.
 
 Latest local acceptance: **59 regression tests**, lint/build/typecheck and both six-case HTTPS suites pass. The [acceptance report](docs/LEARNER_ACCEPTANCE_2026-10-22.json) records 104 responsive cases defined but blocked before page startup, plus the remaining real-provider/email gates.
+
+## Account flow follow-up — 22 October 2026
+
+New registration now returns a uniform pending response, delivers a mailbox-verification link and requires the original signup password on `/verify-email`. Verification does not log in automatically or change existing credentials. Fresh checks: **66 Learner tests**, lint/build/typecheck, seven fixture HTTPS cases and seven actual-local-Platform cases pass; Platform has **32 tests** and 28 OpenAPI operations. Migration **0020 is not applied remotely**. Real mail/device acceptance and deployment remain open. See [account implementation and rollout](docs/ACCOUNTS_2026-10-22.md).

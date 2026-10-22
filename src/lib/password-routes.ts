@@ -1,4 +1,4 @@
-import { authResponse, learnOrigin, resetDeliveryConfigured, sendPasswordResetEmail, serviceKeyHeaders, requireWebSessionConfiguration } from "@/lib/auth";
+import { sendVerificationEmail, authResponse, learnOrigin, resetDeliveryConfigured, sendPasswordResetEmail, serviceKeyHeaders, requireWebSessionConfiguration } from "@/lib/auth";
 import { backend, BackendError } from "@/lib/backend";
 import { json, readJson, RequestError, routeError } from "@/lib/http";
 import { validateEmail, validatePassword } from "@/lib/validation";
@@ -25,11 +25,23 @@ export async function passwordAuth(request: Request, mode: "login" | "register" 
         payload.displayName = name;
       }
     }
+    if (mode === "register" && !resetDeliveryConfigured()) throw new RequestError(503, "Registration is unavailable. Please try again later.");
+    const origin = mode === "register" ? learnOrigin() : "";
     const data = await backend(`/app/v1/auth/${mode}`, { method: "POST",
-      headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    if (mode === "register" && data.pending === true) {
+      headers: { "Content-Type": "application/json", ...(mode === "register" ? serviceKeyHeaders() : {}) }, body: JSON.stringify(payload) });
+    if (mode === "register") {
+      // Fail closed against an old backend that still mints registration sessions.
+      if (data.pending !== true || data.token !== undefined) throw new RequestError(502, "Registration is unavailable. Please try again later.");
+      if (data.verificationToken !== undefined) {
+        if (typeof data.verificationToken !== "string" || !/^fv_verify_[a-f0-9]{48}$/.test(data.verificationToken) || data.email !== payload.email) {
+          throw new RequestError(502, "Registration is unavailable. Please try again later.");
+        }
+        if (!await sendVerificationEmail(payload.email!, `${origin}/verify-email#token=${encodeURIComponent(data.verificationToken)}`)) {
+          throw new RequestError(503, "Could not send the verification email. Please try again.");
+        }
+      }
       return json({ status: "ok", pending: true,
-        message: "This address may already have an account. Try logging in, or request a password reset." });
+        message: "Check your email to finish registration. If you already have an account, sign in or reset your password." });
     }
     return await authResponse(data);
   } catch (error) {
@@ -63,4 +75,20 @@ export async function forgotPassword(request: Request) {
     }
     return json({ status: "ok", message: "If an account exists for that email, we sent reset instructions." });
   } catch (error) { return routeError(error); }
+}
+
+export async function verifyEmail(request: Request) {
+  try {
+    const body = await readJson(request);
+    if (typeof body.token !== "string" || !/^fv_verify_[a-f0-9]{48}$/.test(body.token) ||
+      typeof body.password !== "string" || !validatePassword(body.password)) {
+      throw new RequestError(400, "This verification link or password is invalid or expired.");
+    }
+    await backend("/app/v1/auth/verify-email", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: body.token, password: body.password }) });
+    return json({ status: "ok" });
+  } catch (error) {
+    if (error instanceof BackendError && error.status === 400) return json({ status: "error", message: "This verification link or password is invalid or expired." }, 400);
+    return routeError(error);
+  }
 }

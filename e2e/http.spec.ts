@@ -28,7 +28,9 @@ async function call(context: APIRequestContext, method: string, path: string, da
   return response;
 }
 async function register(context: APIRequestContext, email = "http-first@example.test") {
-  const response = await call(context, "POST", "/api/auth/register", { email, password: "fixture-password", displayName: "HTTP fixture learner" });
+  const provision = await context.post("http://127.0.0.1:4319/_test/provision", { data: { email, password: "fixture-password", displayName: "HTTP fixture learner" } });
+  expect(provision.status()).toBe(200);
+  const response = await call(context, "POST", "/api/auth/login", { email, password: "fixture-password" });
   expect(response.status(), await response.text()).toBe(200);
   expect(response.headersArray().some(header => /set-cookie/i.test(header.name) && /HttpOnly/.test(header.value) && /Secure/.test(header.value))).toBe(true);
   expect(scope(context)).toMatch(/^[a-f0-9]{64}$/);
@@ -140,4 +142,20 @@ test("HTTP: cross-origin writes are rejected without logout; missing delivery co
   const health = await call(request, "GET", "/api/health");
   expect(health.status()).toBe(200);
   expect((await health.json()).ok).toBe(true);
+});
+
+test("HTTP: signup fails before issuance without mail configuration; verification is POST-only and private", async ({ request }) => {
+  for (const email of ["existing@example.test", "new@example.test"]) {
+    if (email.startsWith("existing")) await request.post("http://127.0.0.1:4319/_test/provision", { data: { email, password: "fixture-password" } });
+    const response = await call(request, "POST", "/api/auth/register", { email, password: "fixture-password" });
+    expect(response.status()).toBe(503);
+    expect(response.headers()["set-cookie"]).toBeUndefined();
+  }
+  const verifyPage = await call(request, "GET", "/verify-email");
+  expect(verifyPage.status()).toBe(200);
+  expect(verifyPage.headers()["referrer-policy"]).toBe("no-referrer");
+  const verify = await call(request, "POST", "/api/auth/verify-email", { token: "invalid", password: "fixture-password" });
+  expect(verify.status()).toBe(400);
+  expect(verify.headers()["cache-control"]).toBe("no-store");
+  expect(verify.headers()["set-cookie"]).toBeUndefined();
 });

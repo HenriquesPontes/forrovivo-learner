@@ -97,6 +97,19 @@ export async function sendPasswordResetEmail(options: {
   }
 }
 
+export async function sendVerificationEmail(to: string, verificationUrl: string): Promise<boolean> {
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST", headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY?.trim()}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: process.env.RESEND_FROM_EMAIL?.trim() || "ForroVivo <hello@forrovivo.com>", to: [to],
+        subject: "Verify your ForroVivo email / Confirma o teu e-mail",
+        text: `Finish registration using the link below and the password you chose. The link expires in one hour. Existing accounts and passwords are not changed. If you did not request this, ignore this email.\n\nConclui o registo com a ligação abaixo e a palavra-passe que escolheste. A ligação expira dentro de uma hora. As contas e palavras-passe existentes não são alteradas. Se não pediste este registo, ignora este e-mail.\n\n${verificationUrl}` }),
+      redirect: "error", cache: "no-store", signal: AbortSignal.timeout(10_000),
+    });
+    return response.ok;
+  } catch { return false; }
+}
+
 export function sessionCookieOptions(expiresAt: string) {
   const expires = new Date(expiresAt);
   if (!Number.isFinite(expires.getTime()) || expires.getTime() <= Date.now()) throw new RequestError(502, "The account service returned an invalid session.");

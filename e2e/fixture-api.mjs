@@ -24,6 +24,20 @@ async function handle(request) {
     accounts = new Map(); sessions = new Map(); snapshots = new Map(); failWrites = false;
     return reply({ status: 'ok' });
   }
+  if (path === '/_test/provision') {
+    const body = await request.json();
+    if (!body.email?.endsWith('@example.test')) return error('TEST_IDENTITY_REQUIRED', 400);
+    if (platform) {
+      const signup = await platform.request('/app/v1/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-ForroVivo-Service-Key': 'test-only-service-key' }, body: JSON.stringify(body) });
+      const pending = await signup.json();
+      const verified = await platform.request('/app/v1/auth/verify-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: pending.verificationToken, password: body.password }) });
+      if (!verified.ok) return verified;
+      return reply({ status: 'ok' });
+    }
+    const key = body.email.toLowerCase();
+    if (!accounts.has(key)) accounts.set(key, { provider: 'email', email: key, displayName: body.displayName || 'Fixture learner', appLanguage: 'en', studyLanguage: 'forro', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), password: body.password });
+    return reply({ status: 'ok' });
+  }
   if (path === '/_test/fail-writes') { failWrites = (await request.json()).enabled === true; return reply({ status: 'ok' }); }
   if (path.includes('/catalog/forro/learning_path.json')) return reply(catalog);
   if (path.includes('/catalog/health')) return reply({ status: 'ok' });
@@ -37,13 +51,10 @@ async function handle(request) {
     return response;
   }
   if (path === '/health' || path.endsWith('/health')) return reply({ status: 'ok', d1: 'ok' });
-  if (path === '/app/v1/auth/login' || path === '/app/v1/auth/register') {
+  if (path === '/app/v1/auth/register') return reply({ status: 'ok', pending: true });
+  if (path === '/app/v1/auth/login') {
     const body = await request.json();
     const key = body.email?.toLowerCase();
-    if (path.endsWith('/register')) {
-      if (accounts.has(key)) return reply({ status: 'ok', pending: true });
-      accounts.set(key, { provider: 'email', email: key, displayName: body.displayName || 'Fixture learner', appLanguage: 'en', studyLanguage: 'forro', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), password: body.password });
-    }
     const account = accounts.get(key);
     if (!account || account.password !== body.password) return error('AUTH_INVALID', 401);
     const token = `fv_learn_${randomBytes(24).toString('hex')}`;

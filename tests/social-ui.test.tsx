@@ -155,13 +155,13 @@ it("the cartoon form can reveal a password without submitting or losing the logi
   expect(setup.replace).toHaveBeenCalledWith("/home");
 });
 
-it("pending registration stays on the form and does not invent a sent email", async () => {
+it("pending registration stays on the form and asks for mailbox confirmation", async () => {
   fetcher.mockResolvedValue(Response.json({ status: "ok", pending: true }));
   await act(async () => { root.render(<AuthForm mode="register" appearance="cartoon" showAccountLink={false} />); });
   await fill("email", "fixture@example.test"); await fill("password", "fixture-password");
   await act(async () => { node.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
-  expect(node.textContent).toContain("This email may already have an account.");
-  expect(node.textContent).not.toContain("Check your email");
+  expect(node.textContent).toContain("Check your email to finish registration.");
+  expect(node.textContent).not.toContain("we sent");
   expect(setup.replace).not.toHaveBeenCalled();
 });
 
@@ -203,7 +203,7 @@ it("Portuguese registration localizes labels and the pending-account message", a
   expect(node.textContent).toContain("opcional");
   await fill("email", "fixture@example.test"); await fill("password", "fixture-password");
   await act(async () => { node.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
-  expect(node.querySelector('[role="status"]')?.textContent).toContain("Este e-mail poderá já ter uma conta.");
+  expect(node.querySelector('[role="status"]')?.textContent).toContain("Consulta o teu e-mail para concluir o registo.");
   expect(setup.replace).not.toHaveBeenCalled();
 });
 
