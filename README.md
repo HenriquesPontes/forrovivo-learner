@@ -2,15 +2,14 @@
 
 Web Academy at [learn.forrovivo.com](https://learn.forrovivo.com), deployed through the `forrovivo-learner` Vercel project. The iOS and Android apps remain the primary learning surfaces. Catalog, learner accounts and cloud progress use the existing Platform `/app/v1` API.
 
-A validated account is required for every lesson; lessons within each unit unlock in order. The catalog inspected on 21 October contains 15 units, 75 levels and 358 phrases. Linguistic content stays in Research and the remote catalog.
+A validated account is required for every lesson; lessons within each unit unlock in order. Linguistic content stays in Research and the remote catalog.
 
-The [21 October remediation report](docs/REMEDIATION_2026-10-21.md) records the source changes, verification and remaining release gates. See the [22 October current status](docs/CURRENT_STATUS_2026-10-22.md) for subsequent committed changes and fresh test results. Deployment mapping has not been reverified.
 
 ## Accounts and progress
 
 The public guest-learning entry is retired. Account results first enter an account-specific local outbox, then sync to the existing cloud progress API. Failed syncs remain available for retry. Legacy guest-progress handling remains in source; it does not enable anonymous lessons. The browser cache contains completion counts and scores, with no bearer token.
 
-Cloud lessons use the native `path_uN` IDs and contiguous `completedLessonCount`. Replays do not inflate completion. Web preserves the existing native snapshot fields and updates lesson counts/scores; the backend merges those counts monotonically. Other snapshot fields still use the backend's existing last-write-wins policy. Concurrent native SRS/bookmark edits need a coordinated partial-update API for stronger conflict protection.
+Cloud lessons use the native `path_uN` IDs and contiguous `completedLessonCount`. Replays do not inflate completion. Web sends only the lesson rows it changed, plus the unit rows it read as `basePayload`. The backend keeps lesson counts, scores and unlocks monotonic, and keeps every other field that this write did not change from that baseline.
 
 Apple and Google identities remain provider-specific. Use the same supported provider to access the same account on web and native. Web sign-in and signup use Apple and Google only. Matching an email address does not link distinct identities. Existing email account data is retained; authenticated legacy users can still export/manage their data. iOS and Android support different provider sets. Provider dashboard configuration and real web OAuth acceptance remain release requirements.
 
@@ -20,7 +19,7 @@ Protected pages validate the session against Platform. A signed HttpOnly context
 
 | Route | Purpose |
 | --- | --- |
-| `/`, `/login` | Email login; configured Apple/Google sign-in |
+| `/`, `/login` | Apple and Google sign-in |
 | `/try` | Clear the legacy guest cookie and redirect to login |
 | `/home` | Course map and sync status |
 | `/academy/[unit]/[level]` | Lesson quiz and durable completion |
@@ -45,7 +44,7 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-If the host cannot start Turbopack's FSEvent stream, use `WATCHPACK_POLLING=true npm run dev -- --webpack --hostname localhost --port 3002`. The local preview in this pass uses that command at `http://localhost:3002`.
+If the host cannot start Turbopack's FSEvent stream, use `WATCHPACK_POLLING=true npm run dev -- --webpack --hostname localhost --port 3002`.
 
 Set `API_ORIGIN` to the intended backend and `LEARN_ORIGIN` to the canonical portal origin. Both accept HTTPS, with HTTP allowed only on loopback for local development. Preview recovery links require an explicit origin override; they do not derive from a Vercel preview hostname.
 
@@ -60,7 +59,7 @@ Set `API_ORIGIN` to the intended backend and `LEARN_ORIGIN` to the canonical por
 | `NEXT_PUBLIC_APPLE_WEB_CLIENT_ID` | Build-time override; defaults to `com.forrovivo.learner.web`. Verify the matching Worker audience and Apple association |
 | `NEXT_PUBLIC_APPLE_WEB_REDIRECT_URI` | Exact registered Apple web return URL; default `https://learn.forrovivo.com/` |
 
-An absent Google ID leaves Google unavailable. Apple uses its default Services ID even when its override is empty; off-origin or HTTP previews link to the configured secure Apple return origin. Keep secrets in deployment settings or ignored local configuration. Source Sans 3 and the public site's Nunito are bundled locally with OFL licenses/provenance in `src/app/fonts`; builds do not download them from Google. The login/registration pages use the public site's cartoon design language and the supplied layout reference. See [login design and social setup](docs/AUTH_UI_2026-10-21.md) for provider activation and verification limits.
+An absent Google ID leaves Google unavailable. Apple uses its default Services ID even when its override is empty; off-origin or HTTP previews link to the configured secure Apple return origin. Keep secrets in deployment settings or ignored local configuration. Source Sans 3 and the public site's Nunito are bundled locally with OFL licenses/provenance in `src/app/fonts`; builds do not download them from Google. The login/registration pages use the public site's cartoon design language and the supplied layout reference. See [login design and social setup](docs/CURRENT_STATUS.md) for provider activation and verification limits.
 
 ## Verification
 
@@ -84,22 +83,10 @@ PLATFORM_TEST_ROOT=/absolute/path/to/forrovivo-platform npm run test:e2e:api
 
 This optional path requires the Platform checkout and its dependencies. It uses temporary SQLite and synthetic identities, with no production writes or real emails. The default fixture supports independent Learner CI. Run build and typecheck sequentially because Next regenerates its route types.
 
-CI enforces production dependency audit, zero-warning lint, regression tests, typecheck, build and WebKit/HTTP checks. Remote CI has not been verified in this pass. The full dependency audit currently flags an unpatched development-only `braces` chain; production dependencies audit clean. See the remediation report for details.
+CI defines dependency, lint, regression, typecheck, build and browser/HTTP checks. Inspect the latest workflow run and rerun dependency auditing before release.
 
 Login and registration support EN/PT with a saved browser preference. Dashboard and lesson source also include EN/PT translation support; full string coverage and browser acceptance remain unverified. Web currently saves lesson completion and first-attempt score. Full bilingual UI, web audio, XP, streaks, hearts, SRS, mistake review and native feature parity remain separate product decisions. Never store linguistic JSON, Admin credentials, real learner data or secrets in this repository.
 
-Current UI changes and the pending screen-size acceptance matrix are recorded in the [22 October documentation follow-up](docs/AUTH_UI_2026-10-21.md#documentation-follow-up--22-october-2026). The earlier single-viewport result does not certify the latest registration spacing or all screen sizes.
+## Current assessment
 
-Latest local acceptance: **59 regression tests**, lint/build/typecheck and both six-case HTTPS suites pass. The [acceptance report](docs/LEARNER_ACCEPTANCE_2026-10-22.json) records 104 responsive cases defined but blocked before page startup, plus the remaining real-provider/email gates.
-
-## Account flow follow-up — 22 October 2026
-
-**Historical, superseded by the social-only rollout below.** New registration returned a uniform pending response, delivers a mailbox-verification link and requires the original signup password on `/verify-email`. Verification does not log in automatically or change existing credentials. Fresh checks: **66 Learner tests**, lint/build/typecheck, seven fixture HTTPS cases and seven actual-local-Platform cases pass; Platform has **32 tests** and 28 OpenAPI operations. Migration **0020 is not applied remotely**. Real mail/device acceptance and deployment remain open. See [account implementation and rollout](docs/ACCOUNTS_2026-10-22.md).
-
-## Social-only web sign-in — 22 October 2026
-
-The website now offers only Apple and Google for login and signup, like the native apps. The existing font, palette, cartoon sign, leafy card, provider buttons and responsive CSS remain. Password forms and recovery links are removed. `/forgot-password`, `/reset-password` and `/verify-email` redirect to `/`; all five password-auth POST endpoints return `410`, without parsing credentials, calling the API, sending mail or changing session cookies.
-
-Existing email-account data and sessions are not deleted or linked to social identities. The password confirmation used solely to erase a legacy email account is retained for those authenticated users; it is not a sign-in route. No shared Worker, D1 schema or native app changes are required.
-
-Validation and deployment evidence: [social-only rollout](docs/SOCIAL_ONLY_2026-10-22.md).
+See [current status and remaining acceptance](docs/CURRENT_STATUS.md). Historical audit pass counts are not release evidence.

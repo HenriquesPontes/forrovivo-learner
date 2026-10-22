@@ -79,9 +79,29 @@ async function handle(request) {
     if (request.method === 'PUT') {
       const body = await request.json();
       const existing = snapshots.get(identity);
-      const rows = new Map((existing?.payload.unitProgress || []).map(row => [row.unitId, row]));
-      for (const row of body.payload.unitProgress) rows.set(row.unitId, { ...row, completedLessonCount: Math.max(rows.get(row.unitId)?.completedLessonCount || 0, row.completedLessonCount) });
-      snapshots.set(identity, { ...body, payload: { ...body.payload, unitProgress: [...rows.values()] } });
+      const prior = existing?.payload && typeof existing.payload === 'object' ? existing.payload : {};
+      const incoming = body.payload && typeof body.payload === 'object' ? body.payload : {};
+      const baseline = new Map((body.basePayload?.unitProgress || []).map(row => [row.unitId, row]));
+      const payload = { ...prior };
+      for (const [key, value] of Object.entries(incoming)) if (key !== 'unitProgress') payload[key] = value;
+      const rows = new Map((prior.unitProgress || []).map(row => [row.unitId, row]));
+      for (const row of incoming.unitProgress || []) {
+        const old = rows.get(row.unitId) || {};
+        const read = baseline.get(row.unitId);
+        const merged = { ...old, unitId: row.unitId };
+        for (const [key, value] of Object.entries(row)) {
+          if (read && Object.is(read[key], value) && Object.hasOwn(old, key)) continue;
+          merged[key] = value;
+        }
+        merged.completedLessonCount = Math.max(old.completedLessonCount || 0, row.completedLessonCount || 0);
+        merged.acknowledgedLessonCount = Math.max(old.acknowledgedLessonCount || 0, row.acknowledgedLessonCount || 0);
+        merged.bestScorePercent = Math.max(old.bestScorePercent || 0, row.bestScorePercent || 0);
+        merged.isUnlocked = Boolean(old.isUnlocked || row.isUnlocked);
+        rows.set(row.unitId, merged);
+      }
+      if (incoming.unitProgress) payload.unitProgress = [...rows.values()];
+      const { payload: _ignored, basePayload: _baseline, ...rest } = body;
+      snapshots.set(identity, { ...existing, ...rest, payload });
       return reply({ status: 'ok', studyLanguage: 'forro', updatedAt: body.updatedAt });
     }
     if (new URL(request.url).searchParams.get('studyLanguage') !== 'forro') return error('PROGRESS_NOT_FOUND', 404);

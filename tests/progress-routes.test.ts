@@ -72,7 +72,9 @@ it("uses the complete native shape for first sync and verifies the persisted cou
   const write = fetcher.mock.calls.find(call => call[1]?.method === "PUT")!;
   const body = JSON.parse(String(write[1]?.body));
   expect(body).toMatchObject({ schemaVersion: 1, studyLanguage: "forro", payload: {
-    profile: null, unitProgress: [{ unitId: "path_u1", unitSortOrder: 1, completedLessonCount: 1 }], srsCards: [], mistakes: [], bookmarkEntryIds: [] } });
+    unitProgress: [{ unitId: "path_u1", unitSortOrder: 1, completedLessonCount: 1 }] } });
+  expect(body.basePayload).toBeUndefined();
+  expect(body.payload.profile).toBeUndefined();
   expect(Math.abs(Date.now() - Date.parse(body.updatedAt))).toBeLessThan(60_000);
   expect(write[1]?.headers).toMatchObject({ Authorization: `Bearer ${token}` });
 });
@@ -93,17 +95,18 @@ it("cannot report success if the upstream acknowledges a save without persisting
 
 it("preserves the complete native payload and records current web activity", async () => {
   cloud = { status: "ok", studyLanguage: "forro", updatedAt: new Date().toISOString(), payload: {
-    profile: { xp: 450 }, unitProgress: [], srsCards: [{ entryId: "fixture-srs" }], mistakes: [], bookmarkEntryIds: ["fixture-bookmark"] } };
+    profile: { xp: 450 }, unitProgress: [{ unitId: "path_u1", unitSortOrder: 7, completedLessonCount: 0, bestScorePercent: 0, isUnlocked: true, lastCompletedAt: null }], srsCards: [{ entryId: "fixture-srs" }], mistakes: [], bookmarkEntryIds: ["fixture-bookmark"] } };
   const before = structuredClone(cloud);
   const original = fetcher.getMockImplementation()!;
   fetcher.mockImplementation(async (input, options) => {
     if (String(input).endsWith("/progress") && options?.method === "PUT") {
       const body = JSON.parse(String(options.body));
       expect(Date.parse(body.updatedAt)).toBeGreaterThanOrEqual(Date.parse(before.updatedAt));
-      expect(body.payload.profile).toEqual(before.payload.profile);
-      expect(body.payload.srsCards).toEqual(before.payload.srsCards);
-      expect(body.payload.bookmarkEntryIds).toEqual(before.payload.bookmarkEntryIds);
-      cloud = { ...body, status: "ok" };
+      expect(body.payload.profile).toBeUndefined();
+      expect(body.payload.srsCards).toBeUndefined();
+      expect(body.payload.bookmarkEntryIds).toBeUndefined();
+      expect(body.basePayload).toEqual({ unitProgress: before.payload.unitProgress });
+      cloud = { ...before, status: "ok", updatedAt: body.updatedAt, payload: { ...before.payload, unitProgress: body.payload.unitProgress } };
       return Response.json({ status: "ok" });
     }
     return original(input, options);

@@ -5,7 +5,7 @@ import { json, readJson, RequestError, routeError } from "@/lib/http";
 import { findLevel } from "@/lib/learning-path";
 import { fetchForroCurriculum } from "@/lib/catalog";
 import { cloudProgress } from "@/lib/progress-server";
-import { isLessonResult, completedCount, progressRows } from "@/lib/progress";
+import { isLessonResult, completedCount, progressRows, canonicalUnitId } from "@/lib/progress";
 
 function failure(error: unknown) {
   const response = routeError(error);
@@ -40,15 +40,20 @@ export async function POST(request: Request) {
       }
     }
     const additions = progressRows(units, saved?.units ?? [], results);
-    // Reuse the complete native snapshot: web does not edit XP, SRS, bookmarks,
-    // mistakes or other fields. A current timestamp also records web activity for
-    // retention. Unit counts use the Worker's existing monotonic merge; other
-    // concurrent native metadata follows its existing last-write-wins policy.
+    const touched = new Set(additions.map(row => canonicalUnitId(row.unitId)));
+    const readUnits = Array.isArray(saved?.payload.unitProgress) ? saved.payload.unitProgress : [];
+    const baselineUnits = readUnits.filter(row => {
+      if (!row || typeof row !== "object" || Array.isArray(row)) return false;
+      const id = (row as { unitId?: unknown }).unitId;
+      return typeof id === "string" && touched.has(canonicalUnitId(id));
+    });
+    // Web owns lessons only. The baseline lets the server keep concurrent edits
+    // to every other field instead of treating this write as a newer full copy.
     const updatedAt = new Date(Math.max(Date.now(), saved ? Date.parse(saved.updatedAt) : 0)).toISOString();
-    const payload = saved ? { ...saved.payload, unitProgress: additions } :
-      { profile: null, unitProgress: additions, srsCards: [], mistakes: [], bookmarkEntryIds: [] };
+    const payload = { unitProgress: additions };
     await backend("/app/v1/progress", { method: "PUT", headers: { ...bearer(token), "Content-Type": "application/json" },
-      body: JSON.stringify({ schemaVersion: 1, studyLanguage: "forro", updatedAt, payload }) });
+      body: JSON.stringify({ schemaVersion: 1, studyLanguage: "forro", updatedAt, payload,
+        ...(baselineUnits.length ? { basePayload: { unitProgress: baselineUnits } } : {}) }) });
     const confirmed = await cloudProgress(token);
     if (!confirmed || additions.some(addition => !confirmed.units.some(row => row.unitId === addition.unitId &&
       row.completedLessonCount >= addition.completedLessonCount && row.bestScorePercent >= addition.bestScorePercent))) {
