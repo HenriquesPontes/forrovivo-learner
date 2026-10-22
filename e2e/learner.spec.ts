@@ -1,12 +1,10 @@
+import { fixtureSession } from "./session-fixture";
 import { test, expect, type Page } from "@playwright/test";
 
 async function register(page: Page, email = "first@example.test") {
-  const provision = await page.request.post("http://127.0.0.1:4319/_test/provision", { data: { email, password: "fixture-password" } });
-  expect(provision.status()).toBe(200);
-  await page.goto("/");
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill("fixture-password");
-  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  const cookies = await fixtureSession(page.request, email);
+  await page.context().addCookies(Object.entries(cookies).map(([name, value]) => ({ name, value, url: "https://localhost:4318", httpOnly: true, secure: true, sameSite: "Lax" as const })));
+  await page.goto("/home");
   await expect(page).toHaveURL(/\/home$/);
   const introduction = page.getByRole("heading", { name: "How would you like to learn?", exact: true });
   await expect(introduction.or(page.getByRole("heading", { name: "Forro", exact: true }))).toBeVisible();
@@ -37,11 +35,9 @@ test("a new account gets a short web introduction once", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Log in", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Try a lesson" })).toHaveCount(0);
 
-  await page.request.post("http://127.0.0.1:4319/_test/provision", { data: { email: "quick@example.test", password: "fixture-password" } });
-  await page.goto("/");
-  await page.getByLabel("Email", { exact: true }).fill("quick@example.test");
-  await page.getByLabel("Password", { exact: true }).fill("fixture-password");
-  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  const cookies = await fixtureSession(page.request, "quick@example.test");
+  await page.context().addCookies(Object.entries(cookies).map(([name, value]) => ({ name, value, url: "https://localhost:4318", httpOnly: true, secure: true, sameSite: "Lax" as const })));
+  await page.goto("/home");
   await expect(page).toHaveURL(/\/home$/);
   await expect(page.getByRole("heading", { name: "How would you like to learn?", exact: true })).toBeVisible();
   await page.getByRole("radio", { name: /^Solo / }).check();
@@ -67,9 +63,8 @@ test("a new account gets a short web introduction once", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.getByRole("button", { name: "Log out", exact: true }).click();
   await expect(page).toHaveURL("/");
-  await page.getByLabel("Email", { exact: true }).fill("quick@example.test");
-  await page.getByLabel("Password", { exact: true }).fill("fixture-password");
-  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await page.context().addCookies(Object.entries(await fixtureSession(page.request, "quick@example.test")).map(([name, value]) => ({ name, value, url: "https://localhost:4318", httpOnly: true, secure: true, sameSite: "Lax" as const })));
+  await page.goto("/home");
   await expect(page).toHaveURL(/\/home$/);
   await expect(page.getByRole("heading", { name: "Forro", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "How much Forro do you know?", exact: true })).toHaveCount(0);

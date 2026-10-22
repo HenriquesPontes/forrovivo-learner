@@ -5,7 +5,6 @@ import { CartoonScene } from "@/components/CartoonScene";
 import { redirect } from "next/navigation";
 import { requireAccount } from "@/lib/session";
 import { BackendError } from "@/lib/backend";
-import { AuthForm } from "@/components/AuthForm";
 import { SocialSignIn } from "@/components/SocialSignIn";
 import { SiteHeader } from "@/components/SiteHeader";
 import { APPLE_WEB_CLIENT_ID, GOOGLE_WEB_CLIENT_ID, APP_STORE_URL, PLAY_STORE_URL } from "@/lib/constants";
@@ -20,7 +19,7 @@ export default async function ReauthenticatePage() {
     <CartoonScene scene="key" />
     <h1 className="text-2xl font-semibold"><LearnerText text={"Sign in again"} /></h1>
     <p className="mt-3 text-[var(--muted)]"><LearnerText text={"Sign in with your current account to continue. Your cloud lessons stay saved."} /></p>
-    {access.account.provider === "email" ? <AuthForm mode="login" returnTo="/account" /> : socialAvailable ? <SocialSignIn returnTo="/account" /> :
+    {access.account.provider === "email" ? <p role="status" className="mt-6 text-sm"><LearnerText text="Email and password sign-in is no longer available. Existing email account data is kept separate from Apple and Google accounts." /></p> : socialAvailable ? <SocialSignIn returnTo="/account" /> :
       <p role="status" className="mt-6 text-sm"><LearnerText text={"Web sign-in for your provider is currently unavailable. You can continue with your existing account in an app that supports your provider: "} /><a href={APP_STORE_URL} className="text-[var(--brand)] underline"><LearnerText text={"iPhone app"} /></a><LearnerText text={" or "} /><a href={PLAY_STORE_URL} className="text-[var(--brand)] underline"><LearnerText text={"Android app"} /></a>.</p>}
   </main></div></LearnerLanguage>;
 }

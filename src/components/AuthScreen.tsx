@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { AuthLanguageSwitch, useAuthLanguage } from "@/components/AuthLanguage";
 import Image from "next/image";
 import Link from "next/link";
-import { AuthForm } from "@/components/AuthForm";
 import { SocialSignIn } from "@/components/SocialSignIn";
 
 
@@ -53,16 +52,16 @@ export function AuthScreen({ mode, className }: { mode: "login" | "register"; cl
           <div className="auth-sign"><span className="auth-sign-pin" aria-hidden="true" /><h1>{login ? t.login : t.register}</h1><span className="auth-sign-pin" aria-hidden="true" /></div>
         </div>
 
-        <section className="auth-card" aria-label={login ? t.emailLogin : t.emailRegister}>
+        <section className="auth-card" aria-label={t.social}>
           <span className="auth-card-corner auth-card-corner-tl" aria-hidden="true" />
           <span className="auth-card-corner auth-card-corner-br" aria-hidden="true" />
           <p className="auth-welcome">{login ? t.welcome : t.registerWelcome}</p>
           <p className="auth-intro">{login ? t.intro : t.registerIntro}</p>
-          <div id="auth-form" tabIndex={-1}><AuthForm mode={mode} appearance="cartoon" showAccountLink={false} /></div>
+          <p className="auth-intro">{t.socialIntro}</p>
           <LeafSprig className="auth-card-leaves" />
         </section>
 
-        <SocialSignIn appearance="cartoon" />
+        <div id="auth-form" tabIndex={-1}><SocialSignIn appearance="cartoon" /></div>
         <p className="auth-switch">{login ? t.newHere : t.alreadyHere} <Link href={login ? "/create-account" : "/"}>{login ? t.register : t.login}<Arrow /></Link></p>
       </div>
     </main>

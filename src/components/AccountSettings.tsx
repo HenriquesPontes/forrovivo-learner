@@ -42,7 +42,7 @@ export function AccountSettings({ account, scope }: { account: Account; scope: s
 
   return <div className="profile-settings-grid">
     <details className="profile-signin"><summary><LearnerText text={"Sign-in details "} /><span aria-hidden="true">⌄</span></summary><p className="text-sm text-[var(--muted)]"><LearnerText text={"Signed in with "} />{account.provider}{account.email ? ` · ${account.email}` : ""}.</p>
-    <p className="text-sm text-[var(--muted)]"><LearnerText text={"For Apple or Google sync, use the same provider on an app that supports it. Email/password accounts currently work on the website and are separate from Apple and Google accounts."} /></p></details>
+    <p className="text-sm text-[var(--muted)]"><LearnerText text={"Use the same Apple or Google account on the website and in the apps to keep your progress together."} /></p></details>
     {message && <p role="status" className="profile-feedback">{tr(message)}</p>}
     <form id="profile" className="profile-settings-card space-y-4" onSubmit={event => { event.preventDefault(); void submit("PATCH"); }}>
       <div className="profile-card-heading"><span className="profile-card-symbol" aria-hidden="true">☺</span><div><h2 className="text-xl font-semibold"><LearnerText text={"Profile"} /></h2><p><LearnerText text={"A little more you."} /></p></div></div>

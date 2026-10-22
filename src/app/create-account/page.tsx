@@ -5,7 +5,7 @@ import { readLearnerAccess } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Create account",
-  description: "Create a ForroVivo Learner account with email, Apple or Google.",
+  description: "Create a ForroVivo Learner account with Apple or Google, just like the apps.",
   alternates: { canonical: "/create-account" },
 };
 

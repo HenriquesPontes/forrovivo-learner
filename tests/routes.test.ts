@@ -2,10 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vite
 const state = vi.hoisted(() => ({ jar: new Map<string, string>() }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: (key: string) => state.jar.has(key) ? { value: state.jar.get(key) } : undefined }) }));
 vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error(`REDIRECT:${url}`); } }));
-import { POST as login } from "@/app/api/auth/login/route";
-import { POST as register } from "@/app/api/auth/register/route";
-import { POST as reset } from "@/app/api/auth/reset-password/route";
-import { POST as forgot } from "@/app/api/auth/forgot-password/route";
 import { POST as oauth } from "@/app/api/auth/oauth/route";
 import { POST as logout } from "@/app/api/auth/logout/route";
 import { GET as clearInvalid } from "@/app/api/auth/clear-invalid/route";
@@ -40,15 +36,15 @@ afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe("browser auth boundary", () => {
   it("rejects null, arrays, malformed, oversized and cross-origin requests before any upstream call", async () => {
-    for (const body of [null, [], "text"]) expect((await login(request(body))).status).toBe(400);
-    expect((await login(request({ email: "x" }, { Origin: "https://other.example.test" }))).status).toBe(403);
-    expect((await login(request({ email: "x" }, { "Content-Type": "text/plain" }))).status).toBe(415);
-    expect((await login(request({ value: "é".repeat(7000) }))).status).toBe(413);
+    for (const body of [null, [], "text"]) expect((await oauth(request(body))).status).toBe(400);
+    expect((await oauth(request({ email: "x" }, { Origin: "https://other.example.test" }))).status).toBe(403);
+    expect((await oauth(request({ email: "x" }, { "Content-Type": "text/plain" }))).status).toBe(415);
+    expect((await oauth(request({ value: "é".repeat(7000) }))).status).toBe(413);
     expect(fetcher).not.toHaveBeenCalled();
   });
   it("sets a validated HttpOnly session and binds signed context to the actual token", async () => {
     fetcher.mockResolvedValue(Response.json(success()));
-    const response = await login(request({ email: account.email, password: "test-password" }));
+    const response = await authResponse(success());
     expect(response.status).toBe(200);
     expect(response.cookies.get(SESSION_COOKIE)?.value).toBe(token);
     const context = response.cookies.get(SCOPE_COOKIE)?.value;
@@ -58,24 +54,6 @@ describe("browser auth boundary", () => {
     expect(response.headers.get("set-cookie")).toContain("HttpOnly");
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).not.toHaveProperty("token");
-  });
-  it("rejects malformed successful upstream sessions and preserves lockout/outage statuses", async () => {
-    for (const patch of [{ expiresAt: "bad" }, { expiresAt: "2001-01-01T00:00:00Z" }, { token: "invalid" }]) {
-      fetcher.mockResolvedValue(Response.json({ ...success(), ...patch }));
-      const response = await login(request({ email: account.email, password: "test-password" }));
-      expect(response.status).toBe(502);
-      expect(response.cookies.get(SESSION_COOKIE)).toBeUndefined();
-    }
-    fetcher.mockResolvedValue(Response.json({ status: "error", code: "AUTH_LOCKED" }, { status: 429 }));
-    expect((await login(request({ email: account.email, password: "test-password" }))).status).toBe(429);
-    fetcher.mockResolvedValue(Response.json({ status: "error" }, { status: 503 }));
-    expect((await login(request({ email: account.email, password: "test-password" }))).status).toBe(503);
-  });
-  it("does not promise a registration email when the backend only reports pending", async () => {
-    fetcher.mockResolvedValue(Response.json({ status: "ok", pending: true }));
-    const response = await register(request({ email: account.email, password: "test-password" }));
-    expect(response.cookies.get(SESSION_COOKIE)).toBeUndefined();
-    expect((await response.json()).message).not.toContain("we sent");
   });
   it("does not accept arbitrary, revoked or banned cookie values and clears only invalid sessions", async () => {
     state.jar.set(SESSION_COOKIE, "arbitrary");
@@ -98,7 +76,7 @@ describe("browser auth boundary", () => {
   });
   it("requires the web signer before creating a new upstream session and upgrades legacy web sessions", async () => {
     vi.stubEnv("LEARNER_WEB_SERVICE_KEY", "");
-    expect((await login(request({ email: account.email, password: "test-password" }))).status).toBe(503);
+    await expect(authResponse(success())).rejects.toThrow();
     expect(fetcher).not.toHaveBeenCalled();
     vi.stubEnv("LEARNER_WEB_SERVICE_KEY", "test-only-service-key");
     state.jar.set(SESSION_COOKIE, token);
@@ -110,37 +88,6 @@ describe("browser auth boundary", () => {
     const response = await logout(request({}));
     expect(response.cookies.get(SESSION_COOKIE)?.value).toBe("");
     expect(response.cookies.get(SCOPE_COOKIE)?.value).toBe("");
-  });
-});
-
-describe("recovery delivery", () => {
-  it("does not replace tokens if either required sending credential is missing", async () => {
-    for (const key of ["RESEND_API_KEY", "LEARNER_WEB_SERVICE_KEY"]) {
-      vi.stubEnv(key, "");
-      expect((await forgot(request({ email: account.email }))).status).toBe(503);
-      vi.stubEnv(key, "test-key");
-    }
-    expect(fetcher).not.toHaveBeenCalled();
-  });
-  it("keeps unknown-address responses generic without sending, but reports actual delivery failures", async () => {
-    fetcher.mockResolvedValue(Response.json({ status: "ok" }));
-    expect((await forgot(request({ email: account.email }))).status).toBe(200);
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    const resetToken = `fv_reset_${"b".repeat(48)}`;
-    fetcher.mockResolvedValueOnce(Response.json({ status: "ok", resetToken, email: account.email }));
-    fetcher.mockResolvedValueOnce(Response.json({ error: "fixture provider failure" }, { status: 503 }));
-    expect((await forgot(request({ email: account.email }))).status).toBe(503);
-    expect(fetcher.mock.calls.at(-1)?.[0]).toBe("https://api.resend.com/emails");
-  });
-  it("builds the canonical reset origin and never returns a reset token to the browser", async () => {
-    const resetToken = `fv_reset_${"b".repeat(48)}`;
-    fetcher.mockResolvedValueOnce(Response.json({ status: "ok", resetToken, email: account.email }));
-    fetcher.mockResolvedValueOnce(Response.json({ id: "test-only" }));
-    const response = await forgot(request({ email: account.email }));
-    expect(response.status).toBe(200);
-    expect(JSON.parse(String(fetcher.mock.calls.at(-1)?.[1]?.body)).text).toContain(`${origin}/reset-password?token=${resetToken}`);
-    expect(await response.text()).not.toContain(resetToken);
-    expect((await reset(request({ token: "invalid", password: "test-password" }))).status).toBe(400);
   });
 });
 

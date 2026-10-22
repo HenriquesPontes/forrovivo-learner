@@ -12,7 +12,7 @@ The public guest-learning entry is retired. Account results first enter an accou
 
 Cloud lessons use the native `path_uN` IDs and contiguous `completedLessonCount`. Replays do not inflate completion. Web preserves the existing native snapshot fields and updates lesson counts/scores; the backend merges those counts monotonically. Other snapshot fields still use the backend's existing last-write-wins policy. Concurrent native SRS/bookmark edits need a coordinated partial-update API for stronger conflict protection.
 
-Apple and Google identities remain provider-specific. Use the same supported provider to access the same account on web and native. Email/password accounts currently work on the website; matching an email address does not link email, Apple and Google identities. iOS and Android support different provider sets. Provider dashboard configuration and real web OAuth acceptance remain release requirements.
+Apple and Google identities remain provider-specific. Use the same supported provider to access the same account on web and native. Web sign-in and signup use Apple and Google only. Matching an email address does not link distinct identities. Existing email account data is retained; authenticated legacy users can still export/manage their data. iOS and Android support different provider sets. Provider dashboard configuration and real web OAuth acceptance remain release requirements.
 
 Protected pages validate the session against Platform. A signed HttpOnly context cookie binds browser progress and account actions to the account that opened the page, preventing stale tabs from saving into another account. Existing web sessions without this context must sign in once after rollout. Native session tokens and APIs are unchanged. Signing-key rotation also requires web reauthentication.
 
@@ -24,11 +24,11 @@ Protected pages validate the session against Platform. A signed HttpOnly context
 | `/try` | Clear the legacy guest cookie and redirect to login |
 | `/home` | Course map and sync status |
 | `/academy/[unit]/[level]` | Lesson quiz and durable completion |
-| `/create-account` | Website email registration and configured social sign-in |
-| `/forgot-password`, `/reset-password` | Public recovery pages, including when an old cookie is present |
+| `/create-account` | Apple and Google signup, using the existing cartoon shell |
+| `/forgot-password`, `/reset-password` | Retired password pages redirect to social sign-in |
 | `/account` | Profile preference, private cloud-data export and confirmed deletion |
 | `/reauthenticate` | Upgrade an existing web session or refresh sensitive-action authentication |
-| `/api/auth/*` | Guarded password/OAuth/session handlers |
+| `/api/auth/*` | OAuth/session handlers; retired password POST endpoints return 410 without upstream requests |
 | `/api/progress` | Authenticated, account-bound native progress proxy |
 | `/api/account`, `/api/account/export` | Profile updates, erasure and profile/cloud-snapshot export |
 | `/api/health` | Configured catalog/account service checks |
@@ -54,7 +54,7 @@ Set `API_ORIGIN` to the intended backend and `LEARN_ORIGIN` to the canonical por
 | `API_ORIGIN` | Defaults to `https://api.forrovivo.com`; use the staging API for staging acceptance |
 | `LEARN_ORIGIN` | Canonical reset-link origin; defaults to `https://learn.forrovivo.com` |
 | `LEARNER_WEB_SERVICE_KEY` | Required for issuing signed web sessions and trusted recovery requests; must match the Worker secret |
-| `RESEND_API_KEY` | Required for password-reset delivery; missing delivery config fails before requesting a backend token |
+| `RESEND_API_KEY` | No longer used by Learner; password registration and recovery are retired |
 | `RESEND_FROM_EMAIL` | Verified sender; defaults to `ForroVivo <hello@forrovivo.com>` |
 | `NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Optional, read at build time; configure the matching Worker audience and Google web origin |
 | `NEXT_PUBLIC_APPLE_WEB_CLIENT_ID` | Build-time override; defaults to `com.forrovivo.learner.web`. Verify the matching Worker audience and Apple association |
@@ -94,4 +94,12 @@ Latest local acceptance: **59 regression tests**, lint/build/typecheck and both 
 
 ## Account flow follow-up — 22 October 2026
 
-New registration now returns a uniform pending response, delivers a mailbox-verification link and requires the original signup password on `/verify-email`. Verification does not log in automatically or change existing credentials. Fresh checks: **66 Learner tests**, lint/build/typecheck, seven fixture HTTPS cases and seven actual-local-Platform cases pass; Platform has **32 tests** and 28 OpenAPI operations. Migration **0020 is not applied remotely**. Real mail/device acceptance and deployment remain open. See [account implementation and rollout](docs/ACCOUNTS_2026-10-22.md).
+**Historical, superseded by the social-only rollout below.** New registration returned a uniform pending response, delivers a mailbox-verification link and requires the original signup password on `/verify-email`. Verification does not log in automatically or change existing credentials. Fresh checks: **66 Learner tests**, lint/build/typecheck, seven fixture HTTPS cases and seven actual-local-Platform cases pass; Platform has **32 tests** and 28 OpenAPI operations. Migration **0020 is not applied remotely**. Real mail/device acceptance and deployment remain open. See [account implementation and rollout](docs/ACCOUNTS_2026-10-22.md).
+
+## Social-only web sign-in — 22 October 2026
+
+The website now offers only Apple and Google for login and signup, like the native apps. The existing font, palette, cartoon sign, leafy card, provider buttons and responsive CSS remain. Password forms and recovery links are removed. `/forgot-password`, `/reset-password` and `/verify-email` redirect to `/`; all five password-auth POST endpoints return `410`, without parsing credentials, calling the API, sending mail or changing session cookies.
+
+Existing email-account data and sessions are not deleted or linked to social identities. The password confirmation used solely to erase a legacy email account is retained for those authenticated users; it is not a sign-in route. No shared Worker, D1 schema or native app changes are required.
+
+Validation and deployment evidence: [social-only rollout](docs/SOCIAL_ONLY_2026-10-22.md).

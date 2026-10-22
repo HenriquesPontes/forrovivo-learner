@@ -13,7 +13,6 @@ vi.mock("@/lib/constants", () => ({
   SITE_URL: "https://site.example.test",
 }));
 import { SocialSignIn } from "@/components/SocialSignIn";
-import { AuthForm } from "@/components/AuthForm";
 import { AuthLanguageProvider } from "@/components/AuthLanguage";
 import { AuthScreen } from "@/components/AuthScreen";
 
@@ -41,13 +40,6 @@ async function click(label: string) {
   const button = [...node.querySelectorAll("button")].find(item => item.textContent === label);
   expect(button).toBeTruthy();
   await act(async () => { button!.click(); });
-}
-async function fill(name: string, value: string) {
-  const input = node.querySelector<HTMLInputElement>(`input[name="${name}"]`)!;
-  await act(async () => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-  });
 }
 beforeEach(() => {
   vi.clearAllMocks();
@@ -141,72 +133,25 @@ it("a failed Apple SDK does not block Google, and retry can recover Apple", asyn
   expect([...node.querySelectorAll("button")].find(button => button.textContent === "Continue with Apple")?.disabled).toBe(false);
 });
 
-it("the cartoon form can reveal a password without submitting or losing the login values", async () => {
-  await act(async () => { root.render(<AuthForm mode="login" appearance="cartoon" showAccountLink={false} />); });
-  await fill("email", "fixture@example.test"); await fill("password", "fixture-password");
-  await act(async () => { node.querySelector<HTMLButtonElement>('[aria-label="Show password"]')!.click(); });
-  expect(node.querySelector<HTMLInputElement>('input[name="password"]')?.type).toBe("text");
-  expect(node.querySelector<HTMLInputElement>('input[name="password"]')?.value).toBe("fixture-password");
-  expect(fetcher).not.toHaveBeenCalled();
-  await act(async () => { node.querySelector<HTMLButtonElement>('[aria-label="Hide password"]')!.click(); });
-  expect(node.querySelector<HTMLInputElement>('input[name="password"]')?.type).toBe("password");
-  await act(async () => { node.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
-  expect(fetcher).toHaveBeenCalledWith("/api/auth/login", expect.objectContaining({ body: JSON.stringify({ email: "fixture@example.test", password: "fixture-password" }) }));
-  expect(setup.replace).toHaveBeenCalledWith("/home");
-});
-
-it("pending registration stays on the form and asks for mailbox confirmation", async () => {
-  fetcher.mockResolvedValue(Response.json({ status: "ok", pending: true }));
-  await act(async () => { root.render(<AuthForm mode="register" appearance="cartoon" showAccountLink={false} />); });
-  await fill("email", "fixture@example.test"); await fill("password", "fixture-password");
-  await act(async () => { node.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
-  expect(node.textContent).toContain("Check your email to finish registration.");
-  expect(node.textContent).not.toContain("we sent");
-  expect(setup.replace).not.toHaveBeenCalled();
-});
-
-it("switches between English and Portuguese without losing typed credentials", async () => {
-  await act(async () => { root.render(<AuthLanguageProvider initialLocale="en"><AuthScreen mode="login" className="test-font" /></AuthLanguageProvider>); });
-  await fill("email", "fixture@example.test"); await fill("password", "fixture-password");
-  expect(node.textContent).toContain("All rights reserved.");
-  expect(node.textContent).not.toContain("LIVLU Studio");
+it.each(["login", "register"] as const)("%s retains the cartoon shell with only social sign-in in both languages", async mode => {
+  setup.google = "fixture-google-web"; setup.apple = "com.example.fixture.web";
+  googleSdk(); appleSdk();
+  await act(async () => { root.render(<AuthLanguageProvider initialLocale="en"><AuthScreen mode={mode} className="test-font" /></AuthLanguageProvider>); });
+  expect(node.querySelector(".auth-card")).toBeTruthy();
+  expect(node.querySelector(".auth-sign")).toBeTruthy();
+  expect(node.querySelector("input, form")).toBeNull();
+  expect(node.querySelector('a[href="/forgot-password"]')).toBeNull();
+  expect(node.textContent).toContain("Continue with Apple");
+  expect(node.textContent).toContain("Continue with Google");
+  expect(node.textContent).not.toContain("Or continue with");
   await click("PT");
-  expect(node.querySelector("h1")?.textContent).toBe("Entrar");
+  expect(node.querySelector("h1")?.textContent).toBe(mode === "login" ? "Entrar" : "Criar conta");
+  expect(node.textContent).toContain("Continua com Apple ou Google.");
   expect(node.textContent).toContain("Todos os direitos reservados.");
-  expect(node.querySelector(".auth-brand")?.getAttribute("href")).toBe("/home");
-  expect(node.textContent).toContain("Palavra-passe");
-  expect(node.querySelector(".auth-social")).toBeNull();
-  expect(node.textContent).not.toContain("Use the same provider");
-  expect(node.textContent).not.toContain("Back to website");
   expect(document.documentElement.lang).toBe("pt-PT");
-  expect(document.cookie).toContain("fv_learner_locale=pt");
-  expect(node.querySelector<HTMLInputElement>('input[name="password"]')?.value).toBe("fixture-password");
-  await click("EN");
-  expect(node.querySelector("h1")?.textContent).toBe("Log in");
-  expect(node.querySelector<HTMLInputElement>('input[name="email"]')?.value).toBe("fixture@example.test");
+  expect(node.querySelector("input, form")).toBeNull();
+  expect(node.querySelector(".auth-brand")?.getAttribute("href")).toBe("/home");
 });
-
-it("Portuguese sign-in errors are localized and do not navigate", async () => {
-  fetcher.mockResolvedValue(Response.json({ status: "error", message: "Email or password is incorrect." }, { status: 401 }));
-  await act(async () => { root.render(<AuthLanguageProvider initialLocale="pt"><AuthForm mode="login" appearance="cartoon" /></AuthLanguageProvider>); });
-  await fill("email", "fixture@example.test"); await fill("password", "fixture-password");
-  await act(async () => { node.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
-  expect(node.querySelector('[role="alert"]')?.textContent).toBe("E-mail ou palavra-passe incorretos.");
-  expect(setup.replace).not.toHaveBeenCalled();
-});
-
-it("Portuguese registration localizes labels and the pending-account message", async () => {
-  fetcher.mockResolvedValue(Response.json({ status: "ok", pending: true, message: "This address may already have an account." }));
-  await act(async () => { root.render(<AuthLanguageProvider initialLocale="pt"><AuthScreen mode="register" className="test-font" /></AuthLanguageProvider>); });
-  expect(node.querySelector("h1")?.textContent).toBe("Criar conta");
-  expect(node.textContent).toContain("Nome");
-  expect(node.textContent).toContain("opcional");
-  await fill("email", "fixture@example.test"); await fill("password", "fixture-password");
-  await act(async () => { node.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
-  expect(node.querySelector('[role="status"]')?.textContent).toContain("Consulta o teu e-mail para concluir o registo.");
-  expect(setup.replace).not.toHaveBeenCalled();
-});
-
 
 it("uses the registered secure site instead of starting an Apple popup on a different origin", async () => {
   setup.apple = "com.example.fixture.web";

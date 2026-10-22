@@ -1,3 +1,4 @@
+import { fixtureSession } from "./session-fixture";
 import { test, expect, type APIRequestContext, type APIResponse } from "@playwright/test";
 
 // Test-only cookie forwarding on loopback. Cookie attributes are asserted;
@@ -28,11 +29,8 @@ async function call(context: APIRequestContext, method: string, path: string, da
   return response;
 }
 async function register(context: APIRequestContext, email = "http-first@example.test") {
-  const provision = await context.post("http://127.0.0.1:4319/_test/provision", { data: { email, password: "fixture-password", displayName: "HTTP fixture learner" } });
-  expect(provision.status()).toBe(200);
-  const response = await call(context, "POST", "/api/auth/login", { email, password: "fixture-password" });
-  expect(response.status(), await response.text()).toBe(200);
-  expect(response.headersArray().some(header => /set-cookie/i.test(header.name) && /HttpOnly/.test(header.value) && /Secure/.test(header.value))).toBe(true);
+  const cookies = await fixtureSession(context, email);
+  for (const [name, value] of Object.entries(cookies)) jar(context).set(name, value);
   expect(scope(context)).toMatch(/^[a-f0-9]{64}$/);
 }
 const result = (level = 1) => ({ unit: 1, level, score: 80, completedAt: new Date().toISOString() });
@@ -61,17 +59,16 @@ test("HTTP: invalid-cookie access clears safely; recovery remains reachable with
   const portuguese = await call(request, "GET", "/", undefined, { Cookie: "fv_learner_locale=pt" });
   expect(portuguese.status()).toBe(200);
   const portugueseHtml = await portuguese.text();
-  expect(portugueseHtml).toContain("Palavra-passe");
-  expect(portugueseHtml).toContain("Esqueceste-te da palavra-passe?");
+  expect(portugueseHtml).not.toContain('type="password"');
+  expect(portugueseHtml).toContain("Continua com Apple ou Google.");
   expect(portugueseHtml).toContain('lang="pt-PT"');
   const portugueseRegistration = await call(request, "GET", "/create-account", undefined, { Cookie: "fv_learner_locale=pt" });
   expect(portugueseRegistration.status()).toBe(200);
   expect(await portugueseRegistration.text()).toContain("Criar conta");
   jar(request).set("fv_learner_session", "arbitrary");
   const reset = await call(request, "GET", `/reset-password?token=fv_reset_${"b".repeat(48)}`);
-  expect(reset.status()).toBe(200);
+  await expectPageRedirect(reset, "/");
   expect(reset.headers()["referrer-policy"]).toBe("no-referrer");
-  expect(await reset.text()).toContain("Choose a new password");
 });
 
 test("HTTP: native progress count persists, replay is idempotent, and skipped levels cannot be saved", async ({ request }) => {
@@ -93,8 +90,7 @@ test("HTTP: an existing session upgrades through reauthentication without a redi
   await expectPageRedirect(home, "/reauthenticate");
   expect((await call(request, "GET", "/reauthenticate")).status()).toBe(200);
   expect((await call(request, "POST", "/api/progress", { results: [result()] })).status()).toBe(409);
-  const login = await call(request, "POST", "/api/auth/login", { email: "http-first@example.test", password: "fixture-password" });
-  expect(login.status()).toBe(200);
+  await register(request);
   expect(scope(request)).toMatch(/^[a-f0-9]{64}$/);
   expect((await call(request, "GET", "/home")).status()).toBe(200);
 });
@@ -132,30 +128,30 @@ test("HTTP: profile and export use the current identity; deletion requires passw
   await expectPageRedirect(await call(request, "GET", "/account"), "/");
 });
 
-test("HTTP: cross-origin writes are rejected without logout; missing delivery configuration returns 503", async ({ request }) => {
+test("HTTP: cross-origin writes are rejected without logout; retired password endpoints return 410", async ({ request }) => {
   await register(request);
   const token = jar(request).get("fv_learner_session");
   const blocked = await call(request, "POST", "/api/progress", { results: [result()] }, { Origin: "https://other.example.test" });
   expect(blocked.status()).toBe(403);
   expect(jar(request).get("fv_learner_session")).toBe(token);
-  expect((await call(request, "POST", "/api/auth/forgot-password", { email: "http-first@example.test" })).status()).toBe(503);
+  expect((await call(request, "POST", "/api/auth/forgot-password", { email: "http-first@example.test" })).status()).toBe(410);
   const health = await call(request, "GET", "/api/health");
   expect(health.status()).toBe(200);
   expect((await health.json()).ok).toBe(true);
 });
 
-test("HTTP: signup fails before issuance without mail configuration; verification is POST-only and private", async ({ request }) => {
+test("HTTP: password signup and verification are retired without issuing sessions", async ({ request }) => {
   for (const email of ["existing@example.test", "new@example.test"]) {
     if (email.startsWith("existing")) await request.post("http://127.0.0.1:4319/_test/provision", { data: { email, password: "fixture-password" } });
     const response = await call(request, "POST", "/api/auth/register", { email, password: "fixture-password" });
-    expect(response.status()).toBe(503);
+    expect(response.status()).toBe(410);
     expect(response.headers()["set-cookie"]).toBeUndefined();
   }
   const verifyPage = await call(request, "GET", "/verify-email");
-  expect(verifyPage.status()).toBe(200);
+  await expectPageRedirect(verifyPage, "/");
   expect(verifyPage.headers()["referrer-policy"]).toBe("no-referrer");
   const verify = await call(request, "POST", "/api/auth/verify-email", { token: "invalid", password: "fixture-password" });
-  expect(verify.status()).toBe(400);
+  expect(verify.status()).toBe(410);
   expect(verify.headers()["cache-control"]).toBe("no-store");
   expect(verify.headers()["set-cookie"]).toBeUndefined();
 });

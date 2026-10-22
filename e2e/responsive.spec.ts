@@ -21,7 +21,8 @@ for (const locale of ["en", "pt"] as const) {
         await page.goto(route);
         await page.evaluate(() => document.fonts.ready);
         await expect(page.locator("html")).toHaveAttribute("lang", locale === "pt" ? "pt-PT" : "en");
-        await expect(page.locator('input[type="email"]')).toBeVisible();
+        await expect(page.locator(".auth-card")).toBeVisible();
+        await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
         const layout = await page.evaluate(() => {
           const controls = [...document.querySelectorAll<HTMLElement>(".auth-header a, .auth-header button, .auth-form input, .auth-form button, .auth-social a, .auth-social button, .auth-switch a")]
             .filter(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
@@ -43,17 +44,6 @@ for (const locale of ["en", "pt"] as const) {
         await testInfo.attach("layout", { body: JSON.stringify(layout, null, 2), contentType: "application/json" });
         expect(layout.scrollWidth).toBeLessThanOrEqual(width + 1);
         expect(layout.clipped).toEqual([]);
-        if (route === "/create-account") {
-          expect(layout.emailGap).not.toBeNull();
-          expect(layout.emailGap!).toBeGreaterThanOrEqual(12);
-        }
-        // Vertical scrolling is permitted on short screens; every input must be reachable.
-        for (const input of await page.locator(".auth-form input").all()) {
-          await input.scrollIntoViewIfNeeded();
-          await expect(input).toBeInViewport();
-          await input.focus();
-          await expect(input).toBeFocused();
-        }
         await page.locator(".auth-footer").scrollIntoViewIfNeeded();
         await expect(page.locator(".auth-footer")).toBeInViewport();
       });

@@ -1,37 +1,6 @@
-import { LearnerText } from "@/components/LearnerText";
-import { CartoonScene } from "@/components/CartoonScene";
-import type { Metadata } from "next";
-import { ResetPasswordForm } from "@/components/ResetPasswordForm";
-import { SiteFooter } from "@/components/SiteFooter";
-import { SiteHeader } from "@/components/SiteHeader";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Reset password",
-  description: "Choose a new ForroVivo Learner password.",
-  alternates: { canonical: "/reset-password" },
-};
-
-type ResetPasswordPageProps = {
-  searchParams: Promise<{ token?: string }>;
-};
-
-export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
-  const params = await searchParams;
-  const token = typeof params.token === "string" ? params.token.trim() : "";
-
-  return (
-    <div className="learner-world learner-recovery">
-      <SiteHeader />
-
-      <main id="learner-main" tabIndex={-1} className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-12 sm:px-6 sm:py-16">
-        <CartoonScene scene="key" />
-        <h1 className="text-3xl font-semibold tracking-tight text-[var(--brand-ink)] sm:text-4xl"><LearnerText text={"Reset password"} /></h1>
-        <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--muted)]"><LearnerText text={"Choose a new password for your account."} /></p>
-
-        <ResetPasswordForm token={token} />
-      </main>
-
-      <SiteFooter />
-    </div>
-  );
+/** Retired password flow: use the same social account as the apps. */
+export default function RetiredPasswordPage() {
+  redirect("/");
 }

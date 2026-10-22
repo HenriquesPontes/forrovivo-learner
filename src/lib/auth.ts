@@ -40,74 +40,8 @@ function configuredOrigin(raw: string) {
   return url.origin;
 }
 
-export function serviceKeyHeaders(): HeadersInit {
-  const key = process.env.LEARNER_WEB_SERVICE_KEY?.trim();
-  return key ? { "X-ForroVivo-Service-Key": key } : {};
-}
-
-export function resetDeliveryConfigured() {
-  return Boolean(process.env.LEARNER_WEB_SERVICE_KEY?.trim() && process.env.RESEND_API_KEY?.trim());
-}
-
 export function requireWebSessionConfiguration() {
   if (!process.env.LEARNER_WEB_SERVICE_KEY?.trim()) throw new RequestError(503, "Sign-in is unavailable. Please try again later.");
-}
-
-export async function sendPasswordResetEmail(options: {
-  to: string;
-  resetUrl: string;
-}): Promise<"sent" | "skipped" | "failed"> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM_EMAIL?.trim() || "ForroVivo <hello@forrovivo.com>";
-  if (!apiKey) {
-    console.error("[auth] Password reset delivery is not configured.");
-    return "skipped";
-  }
-
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [options.to],
-        subject: "Reset your ForroVivo password",
-        text: [
-          "Reset your ForroVivo Learner password using this link:",
-          options.resetUrl,
-          "",
-          "This link expires in one hour. If you did not ask for a reset, you can ignore this email.",
-        ].join("\n"),
-      }),
-      cache: "no-store",
-      redirect: "error",
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) {
-      console.error("[auth] Password reset delivery failed:", response.status);
-      return "failed";
-    }
-    return "sent";
-  } catch {
-    console.error("[auth] Password reset delivery request failed.");
-    return "failed";
-  }
-}
-
-export async function sendVerificationEmail(to: string, verificationUrl: string): Promise<boolean> {
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST", headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY?.trim()}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: process.env.RESEND_FROM_EMAIL?.trim() || "ForroVivo <hello@forrovivo.com>", to: [to],
-        subject: "Verify your ForroVivo email / Confirma o teu e-mail",
-        text: `Finish registration using the link below and the password you chose. The link expires in one hour. Existing accounts and passwords are not changed. If you did not request this, ignore this email.\n\nConclui o registo com a ligação abaixo e a palavra-passe que escolheste. A ligação expira dentro de uma hora. As contas e palavras-passe existentes não são alteradas. Se não pediste este registo, ignora este e-mail.\n\n${verificationUrl}` }),
-      redirect: "error", cache: "no-store", signal: AbortSignal.timeout(10_000),
-    });
-    return response.ok;
-  } catch { return false; }
 }
 
 export function sessionCookieOptions(expiresAt: string) {
