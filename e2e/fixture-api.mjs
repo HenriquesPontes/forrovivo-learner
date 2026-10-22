@@ -62,6 +62,10 @@ async function handle(request) {
     return reply({ status: 'ok', token, accountKey: `email:${key}`, provider: 'email', expiresAt: new Date(Date.now() + 3600_000).toISOString() });
   }
   const identity = sessions.get(request.headers.get('authorization')?.replace(/^Bearer /, ''));
+  if (path === '/app/v1/session' && request.method === 'DELETE') {
+    sessions.delete(request.headers.get('authorization')?.replace(/^Bearer /, ''));
+    return reply({ status: 'ok', revoked: true });
+  }
   if (!identity) return error('LEARNER_AUTH_INVALID', 401);
   const account = accounts.get(identity);
   if (path === '/app/v1/account') {

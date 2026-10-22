@@ -89,6 +89,17 @@ describe("browser auth boundary", () => {
     expect(response.cookies.get(SESSION_COOKIE)?.value).toBe("");
     expect(response.cookies.get(SCOPE_COOKIE)?.value).toBe("");
   });
+  it("revokes the server session before clearing cookies and preserves retry on failure", async () => {
+    state.jar.set(SESSION_COOKIE, token);
+    fetcher.mockResolvedValue(Response.json({ status: "ok", revoked: true }));
+    const response = await logout(request({}));
+    expect(fetcher).toHaveBeenCalledWith("https://api.example.test/app/v1/session", expect.objectContaining({ method: "DELETE", headers: expect.objectContaining({ Authorization: `Bearer ${token}` }) }));
+    expect(response.cookies.get(SESSION_COOKIE)?.value).toBe("");
+    fetcher.mockRejectedValue(new Error("offline"));
+    const failed = await logout(request({}));
+    expect(failed.status).toBe(503);
+    expect(failed.cookies.get(SESSION_COOKIE)).toBeUndefined();
+  });
 });
 
 describe("web OAuth nonce and existing-profile safety", () => {
