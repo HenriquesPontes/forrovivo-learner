@@ -8,7 +8,7 @@ Account-required web Academy. Login and signup offer Apple and Google only. Pass
 
 ## Current verification
 
-58 tests, typecheck and zero-warning lint passed in the current source review.
+58 tests, typecheck, zero-warning lint and production Webpack build pass. Browser/HTTP integration startup is blocked by local listen EPERM on port 4319; no E2E pass is claimed.
 
 ## Remaining acceptance
 
