@@ -100,7 +100,9 @@ async function handle(request) {
         rows.set(row.unitId, merged);
       }
       if (incoming.unitProgress) payload.unitProgress = [...rows.values()];
-      const { payload: _ignored, basePayload: _baseline, ...rest } = body;
+      const rest = { ...body };
+      delete rest.payload;
+      delete rest.basePayload;
       snapshots.set(identity, { ...existing, ...rest, payload });
       return reply({ status: 'ok', studyLanguage: 'forro', updatedAt: body.updatedAt });
     }
