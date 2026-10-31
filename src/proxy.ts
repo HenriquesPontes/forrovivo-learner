@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { learnerPageCsp, LEARNER_API_CSP } from "@/lib/csp";
+import { PRIVATE_NO_STORE } from "@/lib/http";
 
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
@@ -11,7 +12,7 @@ export function proxy(request: NextRequest) {
   headers.set("Content-Security-Policy", csp);
   const response = NextResponse.next({ request: { headers } });
   response.headers.set("Content-Security-Policy", csp);
-  response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("Cache-Control", PRIVATE_NO_STORE);
   return response;
 }
 

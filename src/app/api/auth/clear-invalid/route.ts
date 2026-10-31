@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { readSessionToken } from "@/lib/session";
 import { accountForToken, BackendError } from "@/lib/backend";
 import { clearSessionCookies } from "@/lib/auth";
-import { routeError } from "@/lib/http";
+import { PRIVATE_NO_STORE, routeError } from "@/lib/http";
 
 export async function GET(request: Request) {
   const token = await readSessionToken();
@@ -15,6 +15,6 @@ export async function GET(request: Request) {
     }
   }
   const response = NextResponse.redirect(new URL("/", request.url));
-  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("Cache-Control", PRIVATE_NO_STORE);
   return clearSessionCookies(response);
 }

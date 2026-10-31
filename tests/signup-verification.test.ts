@@ -13,7 +13,7 @@ it.each([login, register, forgot, reset, verify])("retired password endpoints re
   expect(response.status).toBe(410);
   expect(await response.json()).toMatchObject({ status: "error", message: expect.stringContaining("Apple or Google") });
   expect(response.headers.get("set-cookie")).toBeNull();
-  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("cache-control")).toBe("private, no-store");
   expect(request.bodyUsed).toBe(false);
   expect(fetcher).not.toHaveBeenCalled();
 });

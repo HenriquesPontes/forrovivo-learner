@@ -118,7 +118,7 @@ test("HTTP: profile and export use the current identity; deletion requires confi
   expect(await page.text()).toContain("Changed fixture");
   const exported = await call(request, "GET", `/api/account/export?scope=${scope(request)}`);
   expect(exported.status()).toBe(200);
-  expect(exported.headers()["cache-control"]).toBe("no-store");
+  expect(exported.headers()["cache-control"]).toBe("private, no-store");
   const data = await exported.json();
   expect(data.account.displayName).toBe("Changed fixture");
   expect(Object.keys(data.progress)).toHaveLength(6);
@@ -152,6 +152,6 @@ test("HTTP: password signup and verification are retired without issuing session
   expect(verifyPage.headers()["referrer-policy"]).toBe("no-referrer");
   const verify = await call(request, "POST", "/api/auth/verify-email", { token: "invalid", password: "fixture-password" });
   expect(verify.status()).toBe(410);
-  expect(verify.headers()["cache-control"]).toBe("no-store");
+  expect(verify.headers()["cache-control"]).toBe("private, no-store");
   expect(verify.headers()["set-cookie"]).toBeUndefined();
 });

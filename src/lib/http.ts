@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 
+/** Authenticated and account responses stay out of shared and browser caches. */
+export const PRIVATE_NO_STORE = "private, no-store";
+
 export class RequestError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
 export function json(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: {
-    "Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
+    "Cache-Control": PRIVATE_NO_STORE, "Referrer-Policy": "no-referrer",
   } });
 }
 

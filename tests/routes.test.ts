@@ -52,7 +52,7 @@ describe("browser auth boundary", () => {
     expect(await readSessionContext(context, `${token.slice(0, -1)}b`)).toBeNull();
     expect(await readSessionContext(context?.replace(/^./, "f"), token)).toBeNull();
     expect(response.headers.get("set-cookie")).toContain("HttpOnly");
-    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(await response.json()).not.toHaveProperty("token");
   });
   it("does not accept arbitrary, revoked or banned cookie values and clears only invalid sessions", async () => {
@@ -209,7 +209,7 @@ describe("account lifecycle", () => {
     const response = await exportAccount(new Request(`${origin}/api/account/export?scope=${requestScope}`));
     expect(response.status).toBe(200);
     expect(response.headers.get("content-disposition")).toContain("attachment;");
-    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     const data = await response.text();
     expect(data).not.toContain(token);
     expect(data).not.toContain("test-password");
